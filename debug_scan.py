@@ -1,4 +1,5 @@
 import os
+import sys
 from tinytag import TinyTag
 
 def scan_dir(directory):
@@ -6,6 +7,10 @@ def scan_dir(directory):
     supported_exts = ('.mp3', '.m4a', '.flac', '.wav', '.ogg')
     found = []
     
+    if not os.path.exists(directory):
+        print(f"[ERROR] Directory not found: {directory}")
+        return
+
     for root, _, files in os.walk(directory):
         for file in files:
             if file.lower().endswith(supported_exts):
@@ -23,6 +28,11 @@ def scan_dir(directory):
 
 if __name__ == "__main__":
     # Force UTF-8 for Windows console
-    import sys
     sys.stdout.reconfigure(encoding='utf-8')
-    scan_dir(r"C:\Users\dhkdw\Desktop\mac")
+    
+    if len(sys.argv) > 1:
+        target_dir = sys.argv[1]
+    else:
+        target_dir = input("Enter directory to scan: ").strip()
+        
+    scan_dir(target_dir)
