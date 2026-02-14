@@ -79,6 +79,23 @@
         </div>
       </div>
 
+      <!-- Remove Duplicates -->
+      <div class="card import-card">
+        <div class="import-card-header">
+          <h2>🔍 Remove Duplicates</h2>
+        </div>
+        <p class="hint">Load playlists from the Playlist tab first, then scan here.</p>
+        <div class="playlist-controls" style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <select id="dup-playlist-select" class="playlist-dropdown">
+            <option value="">Select a playlist...</option>
+          </select>
+          <button id="btn-scan-duplicates" class="btn btn-primary btn-sm" disabled>Scan</button>
+        </div>
+        <div id="dup-status" class="status-badge status-neutral" style="display: none; margin-bottom: 8px;"></div>
+        <div id="dup-preview-list" class="song-list" style="display: none; max-height: 300px; overflow-y: auto; margin-bottom: 8px;"></div>
+        <button id="btn-confirm-remove-duplicates" class="btn btn-danger btn-sm btn-full-width" style="display: none;">Remove All Duplicates</button>
+      </div>
+
       <!-- Import summary -->
       <div id="import-summary" class="import-summary" style="display:none;">
         <div class="stats-row">

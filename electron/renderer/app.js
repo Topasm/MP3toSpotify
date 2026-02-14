@@ -1,7 +1,7 @@
-// electron/renderer/app.js - Frontend logic for MP3toSpotify GUI.
-// Flow: Import (additive) → Songs (review) → Playlist (add)
+﻿// electron/renderer/app.js - Frontend logic for MP3toSpotify GUI.
+// Flow: Import (additive) ??Songs (review) ??Playlist (add)
 
-// ── State ─────────────────────────────────────────────────────────────────
+// ?? State ?????????????????????????????????????????????????????????????????
 const state = {
   isRunning: false,
   scanned: 0,
@@ -14,14 +14,14 @@ const state = {
   cleanup: null,
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ?? Helpers ???????????????????????????????????????????????????????????????
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
 }
 
-// ── DOM ───────────────────────────────────────────────────────────────────
+// ?? DOM ???????????????????????????????????????????????????????????????????
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -88,7 +88,7 @@ const els = {
   linkSpotifyDev: $("#link-spotify-dev"),
 };
 
-// ── Settings ──────────────────────────────────────────────────────────────
+// ?? Settings ??????????????????????????????????????????????????????????????
 function loadSettings() {
   els.clientId.value = localStorage.getItem("mp3ts_clientId") || "";
   els.clientSecret.value = localStorage.getItem("mp3ts_clientSecret") || "";
@@ -99,7 +99,7 @@ function saveSettings() {
   localStorage.setItem("mp3ts_clientId", els.clientId.value.trim());
   localStorage.setItem("mp3ts_clientSecret", els.clientSecret.value.trim());
   localStorage.setItem("mp3ts_username", els.username.value.trim());
-  els.settingsStatus.textContent = "✓ Saved!";
+  els.settingsStatus.textContent = "??Saved!";
   setTimeout(() => (els.settingsStatus.textContent = ""), 2000);
 }
 
@@ -120,7 +120,7 @@ function validateCredentials() {
   return creds;
 }
 
-// ── Tab Switching ─────────────────────────────────────────────────────────
+// ?? Tab Switching ?????????????????????????????????????????????????????????
 const panels = {
   import: els.importPanel,
   songs: els.songsPanel,
@@ -143,7 +143,7 @@ els.tabs.forEach((tab) => {
   tab.addEventListener("click", () => switchTab(tab.dataset.tab));
 });
 
-// ── Import Helpers ────────────────────────────────────────────────────────
+// ?? Import Helpers ????????????????????????????????????????????????????????
 function setImporting(running) {
   state.isRunning = running;
   els.importProgress.style.display = running ? "block" : "none";
@@ -179,7 +179,7 @@ function updateSelectedCount() {
   els.selectedCount.textContent = `${count} selected`;
 }
 
-// ── Fix Match Modal ───────────────────────────────────────────────────────
+// ?? Fix Match Modal ???????????????????????????????????????????????????????
 const fixMatchModal = {
   el: $("#fix-match-modal"),
   input: $("#fix-search-input"),
@@ -262,7 +262,7 @@ const fixMatchModal = {
           ${imgHtml}
           <div class="playlist-info">
             <span class="playlist-name">${escapeHtml(track.name)}</span>
-            <span class="playlist-meta">${escapeHtml(track.artist)} • ${escapeHtml(track.album)}</span>
+            <span class="playlist-meta">${escapeHtml(track.artist)} ??${escapeHtml(track.album)}</span>
           </div>
         </div>
         <button class="playlist-select-btn">Select</button>
@@ -294,7 +294,7 @@ const fixMatchModal = {
 fixMatchModal.init();
 
 // Update song item HTML to include Fix button
-// ── Song List ─────────────────────────────────────────────────────────────
+// ?? Song List ?????????????????????????????????????????????????????????????
 function addSongToList(song) {
   // Check if we already have this song (by name)
   const existingIdx = state.songs.findIndex((s) => s.name === song.name);
@@ -338,7 +338,7 @@ function addSongToList(song) {
 }
 
 function getSongItemHtml(song, idx) {
-  const icon = song.status === "matched" ? "✓" : "✗";
+  const icon = song.status === "matched" ? "✅" : "❌";
   const iconClass = song.status === "matched" ? "song-icon-matched" : "song-icon-failed";
   
   const checkboxHtml = song.status === "matched"
@@ -347,7 +347,7 @@ function getSongItemHtml(song, idx) {
 
   // Fix Match button for failed items
   const actionsHtml = song.status === "failed"
-    ? `<button class="btn-fix-match" data-index="${idx}">🔍 Fix</button>`
+    ? `<button class="btn-fix-match" data-index="${idx}">?뵇 Fix</button>`
     : "";
 
   return `
@@ -414,7 +414,7 @@ function filterSongs(filter) {
   rerenderSongList();
 }
 
-// ── Python Message Handler ────────────────────────────────────────────────
+// ?? Python Message Handler ????????????????????????????????????????????????
 function handlePythonMessage(msg) {
   switch (msg.type) {
     case "total":
@@ -468,7 +468,7 @@ function handlePythonMessage(msg) {
   }
 }
 
-// ── Event Listeners: Settings ─────────────────────────────────────────────
+// ?? Event Listeners: Settings ?????????????????????????????????????????????
 els.saveSettings.addEventListener("click", saveSettings);
 els.linkSpotifyDev.addEventListener("click", (e) => {
   e.preventDefault();
@@ -476,7 +476,7 @@ els.linkSpotifyDev.addEventListener("click", (e) => {
   window.open("https://developer.spotify.com/dashboard", "_blank");
 });
 
-// ── Event Listeners: Import ───────────────────────────────────────────────
+// ?? Event Listeners: Import ???????????????????????????????????????????????
 
 els.btnSelectFolder.addEventListener("click", async () => {
   const folder = await window.api.selectFolder();
@@ -570,7 +570,7 @@ els.btnCancel.addEventListener("click", async () => {
 // Navigate to Songs tab after import
 els.btnGoToSongs.addEventListener("click", () => switchTab("songs"));
 
-// ── Event Listeners: Songs ────────────────────────────────────────────────
+// ?? Event Listeners: Songs ????????????????????????????????????????????????
 
 // Checkbox delegation
 els.songList.addEventListener("change", (e) => {
@@ -605,7 +605,7 @@ els.btnGoToPlaylist.addEventListener("click", () => {
   switchTab("playlist");
 });
 
-// ── Playlist Tab ──────────────────────────────────────────────────────────
+// ?? Playlist Tab ??????????????????????????????????????????????????????????
 
 async function loadPlaylists() {
   const creds = validateCredentials();
@@ -651,6 +651,10 @@ function renderPlaylists(playlists) {
   if (window.compareLogic) {
     window.compareLogic.populateDropdown(playlists);
   }
+  // Update duplicate removal dropdown (Import tab)
+  if (window.duplicateLogic) {
+    window.duplicateLogic.populateDropdown(playlists);
+  }
 }
 
 async function addToPlaylist(playlistId, playlistName) {
@@ -672,7 +676,7 @@ async function addToPlaylist(playlistId, playlistName) {
   state.cleanup = window.api.onPythonMessage((msg) => {
     if (msg.type === "summary") {
       const added = msg.matched || 0;
-      els.playlistAddStatus.textContent = `✓ Added ${added} tracks to playlist!`;
+      els.playlistAddStatus.textContent = `??Added ${added} tracks to playlist!`;
       els.playlistAddStatus.style.color = "var(--success, #1DB954)";
     } else if (msg.type === "error") {
       els.playlistAddStatus.textContent = `Error: ${msg.text}`;
@@ -705,7 +709,7 @@ els.btnCreateAndAdd.addEventListener("click", () => {
 // Refresh playlists
 els.btnRefreshPlaylists.addEventListener("click", loadPlaylists);
 
-// ── Playlist Comparison Logic ─────────────────────────────────────────────
+// ?? Playlist Comparison Logic ?????????????????????????????????????????????
 window.compareLogic = {
   playlistSelect: document.querySelector("#compare-playlist-select"),
   btnCompare: document.querySelector("#btn-compare"),
@@ -713,8 +717,10 @@ window.compareLogic = {
   
   init() {
     this.btnCompare.addEventListener("click", () => this.runComparison());
+    
     this.playlistSelect.addEventListener("change", () => {
-      this.btnCompare.disabled = !this.playlistSelect.value;
+      const hasValue = !!this.playlistSelect.value;
+      this.btnCompare.disabled = !hasValue;
       this.resultsDiv.style.display = "none";
     });
   },
@@ -754,31 +760,27 @@ window.compareLogic = {
       }
 
       const remoteTracks = response;
-
-      // Create a Set of remote track IDs for O(1) lookup
       const remoteIdSet = new Set(remoteTracks.map(t => t.id).filter(Boolean));
 
       let inPlaylistCount = 0;
       let missingCount = 0;
 
-      // Iterate through local MATCHED songs
       state.songs.forEach(song => {
         if (song.status === "matched" && song.trackId) {
           const isIn = remoteIdSet.has(song.trackId);
-          song.inComparePlaylist = isIn; // Tag the song
+          song.inComparePlaylist = isIn;
           if (isIn) {
             inPlaylistCount++;
-            song.checked = false; // Auto-uncheck duplicates
+            song.checked = false;
           }
           else missingCount++;
         } else {
-          song.inComparePlaylist = false; // Not applicable
+          song.inComparePlaylist = false;
         }
       });
 
-      // Update UI
       this.showResults(inPlaylistCount, missingCount);
-      rerenderSongList(); // Re-render to show badges
+      rerenderSongList();
 
     } catch (err) {
       console.error(err);
@@ -797,25 +799,194 @@ window.compareLogic = {
     this.resultsDiv.style.justifyContent = "space-between";
     this.resultsDiv.style.width = "100%";
     
-    // Safety check for button if re-rendering
-    // But we are setting innerHTML so it's fresh
+    if (this.btnCompare) this.btnCompare.textContent = "Compare";
+
     this.resultsDiv.innerHTML = `
       <span>
-        <span style="color:var(--accent);">●</span> ${inCount} In Playlist
+        <span style="color:var(--accent);">??/span> ${inCount} In Playlist
         <span style="color:var(--text-secondary);margin:0 8px;">|</span>
-        <span style="color:var(--danger);">●</span> <strong>${missingCount} Missing</strong>
+        <span style="color:var(--danger);">??/span> <strong>${missingCount} Missing</strong>
       </span>
       <button id="btn-filter-missing" class="btn btn-sm btn-secondary" style="padding:2px 8px;font-size:0.75rem;">Show Missing</button>
     `;
 
-    this.resultsDiv.querySelector("#btn-filter-missing").addEventListener("click", () => {
-      // Custom filter logic
-      filterSongs("missing_from_playlist");
-    });
-  }
+    const btn = this.resultsDiv.querySelector("#btn-filter-missing");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        filterSongs("missing_from_playlist");
+      });
+    }
+  },
 };
 
 window.compareLogic.init();
 
-// ── Init ──────────────────────────────────────────────────────────────────
+// ?? Duplicate Scan & Remove Logic (Import Tab) ???????????????????????????
+window.duplicateLogic = {
+  playlistSelect: document.querySelector("#dup-playlist-select"),
+  btnScan: document.querySelector("#btn-scan-duplicates"),
+  btnConfirmRemove: document.querySelector("#btn-confirm-remove-duplicates"),
+  statusDiv: document.querySelector("#dup-status"),
+  previewList: document.querySelector("#dup-preview-list"),
+  foundDuplicates: [],
+
+  init() {
+    this.btnScan.addEventListener("click", () => this.scanDuplicates());
+    this.btnConfirmRemove.addEventListener("click", () => this.confirmRemove());
+
+    this.playlistSelect.addEventListener("change", () => {
+      const hasValue = !!this.playlistSelect.value;
+      this.btnScan.disabled = !hasValue;
+      this.resetPreview();
+    });
+  },
+
+  populateDropdown(playlists) {
+    this.playlistSelect.innerHTML = '<option value="">Select a playlist...</option>';
+    (playlists || []).forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `${p.name} (${p.tracks_total} tracks)`;
+      this.playlistSelect.appendChild(opt);
+    });
+  },
+
+  resetPreview() {
+    this.foundDuplicates = [];
+    this.previewList.style.display = "none";
+    this.previewList.innerHTML = "";
+    this.btnConfirmRemove.style.display = "none";
+    this.statusDiv.style.display = "none";
+  },
+
+  async scanDuplicates() {
+    const playlistId = this.playlistSelect.value;
+    if (!playlistId) return;
+
+    const creds = validateCredentials();
+    if (!creds) return;
+
+    this.btnScan.disabled = true;
+    this.btnScan.textContent = "Scanning...";
+    this.resetPreview();
+    this.statusDiv.style.display = "block";
+    this.statusDiv.className = "status-badge status-neutral";
+    this.statusDiv.textContent = "Scanning for duplicates...";
+
+    const onMessage = (msg) => {
+      if (msg.type === "log") {
+        this.statusDiv.textContent = msg.text;
+      } else if (msg.type === "duplicates_found") {
+        this.foundDuplicates = msg.tracks || [];
+        this.showPreview(msg.count);
+      } else if (msg.type === "success" && msg.count === 0) {
+        this.statusDiv.textContent = "??No duplicates found!";
+        this.statusDiv.className = "status-badge status-success";
+      } else if (msg.type === "error") {
+        this.statusDiv.textContent = "Error: " + msg.text;
+        this.statusDiv.className = "status-badge status-failed";
+      }
+    };
+
+    if (state.cleanup) state.cleanup();
+    state.cleanup = window.api.onPythonMessage(onMessage);
+
+    try {
+      await window.api.scanDuplicates({
+        username: creds.username,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        playlistId
+      });
+    } catch (err) {
+      console.error(err);
+      this.statusDiv.textContent = `Error: ${err.message}`;
+      this.statusDiv.className = "status-badge status-failed";
+    } finally {
+      this.btnScan.disabled = false;
+      this.btnScan.textContent = "Scan";
+    }
+  },
+
+  showPreview(count) {
+    this.statusDiv.textContent = `Found ${count} duplicate(s) to remove:`;
+    this.statusDiv.className = "status-badge status-neutral";
+
+    this.previewList.innerHTML = "";
+    this.previewList.style.display = "block";
+
+    this.foundDuplicates.forEach(dup => {
+      const item = document.createElement("div");
+      item.style.cssText = "padding:8px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;";
+      item.innerHTML = `
+        <div>
+          <strong>${dup.name}</strong>
+          <span style="color:var(--text-secondary);"> ??${dup.artist}</span>
+        </div>
+        <span class="status-badge status-failed" style="font-size:0.7rem; padding:2px 6px;">
+          ?봺 ${dup.total_occurrences}횞 (removing 1 copy)
+        </span>
+      `;
+      this.previewList.appendChild(item);
+    });
+
+    this.btnConfirmRemove.style.display = "block";
+    this.btnConfirmRemove.textContent = `Remove ${count} Duplicate(s)`;
+  },
+
+  async confirmRemove() {
+    const playlistId = this.playlistSelect.value;
+    if (!playlistId) return;
+
+    const creds = validateCredentials();
+    if (!creds) return;
+
+    if (!confirm(`Remove ${this.foundDuplicates.length} duplicate(s)? A backup will be saved to Documents/MP3toSpotify/backups/.`)) {
+      return;
+    }
+
+    this.btnConfirmRemove.disabled = true;
+    this.btnConfirmRemove.textContent = "Removing...";
+    this.statusDiv.textContent = "Saving backup and removing duplicates...";
+    this.statusDiv.className = "status-badge status-neutral";
+
+    const onMessage = (msg) => {
+      if (msg.type === "log") {
+        this.statusDiv.textContent = msg.text;
+      } else if (msg.type === "success") {
+        this.statusDiv.textContent = "??" + msg.text;
+        this.statusDiv.className = "status-badge status-success";
+        this.previewList.style.display = "none";
+        this.btnConfirmRemove.style.display = "none";
+      } else if (msg.type === "error") {
+        this.statusDiv.textContent = "Error: " + msg.text;
+        this.statusDiv.className = "status-badge status-failed";
+      }
+    };
+
+    if (state.cleanup) state.cleanup();
+    state.cleanup = window.api.onPythonMessage(onMessage);
+
+    try {
+      await window.api.removeDuplicates({
+        username: creds.username,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        playlistId
+      });
+    } catch (err) {
+      console.error(err);
+      this.statusDiv.textContent = `Error: ${err.message}`;
+      this.statusDiv.className = "status-badge status-failed";
+    } finally {
+      this.btnConfirmRemove.disabled = false;
+      this.btnConfirmRemove.textContent = "Remove All Duplicates";
+    }
+  },
+};
+
+window.duplicateLogic.init();
+
+// ?? Init ??????????????????????????????????????????????????????????????????
 loadSettings();
+

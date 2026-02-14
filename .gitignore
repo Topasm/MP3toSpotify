@@ -30,6 +30,9 @@ still_failed.txt
 yt_failed_matches.txt
 Failed matches*.txt
 
+# Duplicate removal backups
+backend/backups/
+
 # Node.js / Electron
 node_modules/
 dist/

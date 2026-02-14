@@ -320,4 +320,77 @@ class SpotifyClient:
             # Return partial results or empty list on error
             return results
             
+    def get_playlist_tracks_with_positions(self, playlist_id: str) -> list[dict]:
+        """Get all tracks with their positions and URIs.
+        
+        Needed for precise duplicate removal.
+        
+        Args:
+            playlist_id: Playlist ID.
+            
+        Returns:
+            List of dicts: {id, uri, pos, name, artist}
+        """
+        results = []
+        try:
+            offset = 0
+            while True:
+                response = self.sp.playlist_items(
+                    playlist_id, 
+                    offset=offset, 
+                    fields="items.track(id,uri,name,artists),next",
+                    additional_types=("track",)
+                )
+                
+                if not response or "items" not in response:
+                    break
+                
+                for i, item in enumerate(response["items"]):
+                    track = item.get("track")
+                    if track and track.get("id"):
+                        results.append({
+                            "id": track["id"],
+                            "uri": track["uri"],
+                            "pos": offset + i,
+                            "name": track["name"],
+                            "artist": track["artists"][0]["name"] if track["artists"] else "Unknown",
+                        })
+                
+                if not response.get("next"):
+                    break
+                    
+                offset += len(response["items"])
+                
+        except Exception as e:
+            print(f"Error fetching tracks: {e}")
+            return results
+            
         return results
+
+    def remove_tracks(self, playlist_id: str, tracks: list[dict]) -> int:
+        """Remove tracks from a playlist.
+
+        Args:
+            playlist_id: Target playlist ID.
+            tracks: List of dicts with {"uri": uri, "positions": [int]} 
+                    or {"uri": uri} (removes all occurrences).
+        
+        Returns:
+            Number of tracks removed (approximate based on request success).
+        """
+        removed = 0
+        remaining = list(tracks)
+
+        while remaining:
+            batch = remaining[:_BATCH_SIZE]
+            try:
+                self.sp.playlist_remove_specific_occurrences_of_items(
+                    playlist_id, batch
+                )
+                removed += len(batch)
+                remaining = remaining[_BATCH_SIZE:]
+            except SpotifyException as e:
+                print(f"Error removing tracks: {e}")
+                break
+
+        return removed

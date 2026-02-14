@@ -23,6 +23,7 @@ Available as a modern **Desktop App** (Windows / macOS / Linux) and **CLI**.
 - 📋 Browse & select existing Spotify playlists — no need to manually copy playlist IDs
 - 🆕 Create New Spotfy Playlists directly within the app
 - 🔀 Automatic duplicate detection (by track ID and display name)
+- 🧹 Duplicate Removal — scan, preview, and remove duplicates from any playlist with auto-backup
 - 🌏 Automatic encoding recovery (CJK mojibake fix via chardet)
 - 📦 Standalone builds — no Python installation required
 
@@ -70,6 +71,7 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 | **Local Music** | Select a local music folder → scans files → matches to Spotify |
 | **YouTube Playlist** | Paste a YouTube playlist URL → matches to Spotify |
 | **Retry Failed** | Retry unmatched songs with smarter search strategies |
+| **Remove Duplicates** | Scan a playlist for duplicates, preview, and remove them |
 
 **Step by step:**
 1. Go to the **Import** tab.
@@ -108,6 +110,19 @@ Compare your local music files with an existing Spotify playlist to easily add m
    - Missing tracks are marked **"Missing"** and remain checked.
 5. Click **"Show Missing"** to filter the list.
 6. Click **"Add to Playlist"** to add only the new tracks. 
+
+### 5. Remove Duplicates
+
+Scan any Spotify playlist for duplicate tracks, preview what will be removed, and confirm.
+
+1. Go to the **Playlist** tab and click **Refresh** to load your playlists.
+2. Switch to the **Import** tab → **Remove Duplicates** section.
+3. Select a playlist and click **Scan**.
+4. Review the preview list — each duplicate shows track name, artist, and occurrence count.
+5. Click **Remove X Duplicate(s)** to confirm removal.
+
+> A backup is automatically saved to `Documents/MP3toSpotify/backups/` before any tracks are removed.
+
 ---
 
 ## CLI Usage
@@ -235,6 +250,7 @@ MP3toSpotify/
 │   ├── encoding_utils.py      # Mojibake recovery (chardet)
 │   ├── gui_utils.py           # GUI output helper
 │   ├── search_strategies.py   # Search fallback logic
+│   ├── remove_duplicates.py   # Duplicate scanner & remover
 │   ├── mp3tospotify.spec      # PyInstaller build spec
 │   └── requirements.txt       # Python dependencies
 ├── .env.example               # Credential template

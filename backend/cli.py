@@ -99,7 +99,8 @@ def main() -> None:
             "  addtracks <username> --tracks id1,id2,..  Add tracks to playlist\n"
             "  listplaylists <username>                  List user's playlists\n"
             "  search    <username> -q <query>           Search for tracks\n"
-            "  playlist_items <username> -p <id>         Get playlist items\n\n"
+            "  playlist_items <username> -p <id>         Get playlist items\n"
+            "  remove_duplicates <username> -p <id>      Remove duplicate tracks\n\n"
             "Examples:\n"
             '  mp3tospotify scan myuser -d "C:/Music"\n'
             "  mp3tospotify retry myuser -i failed_matches.txt\n"
@@ -128,9 +129,11 @@ def main() -> None:
         _search_main()
     elif command == "playlist_items":
         _playlist_items_main()
+    elif command == "remove_duplicates":
+        _remove_duplicates_main()
     else:
         print(f"Unknown command: {command}")
-        print("Use 'scan', 'retry', 'youtube', 'addtracks', 'listplaylists', or 'search'.")
+        print("Use 'scan', 'retry', 'youtube', 'addtracks', 'listplaylists', 'search', or 'remove_duplicates'.")
         sys.exit(1)
 
 
@@ -164,6 +167,16 @@ def _playlist_items_main() -> None:
     client = SpotifyClient(args.username)
     items = client.get_playlist_items(args.playlist_id)
     print(json.dumps(items, ensure_ascii=False), flush=True)
+
+
+def _remove_duplicates_main() -> None:
+    """Remove duplicate tracks from a playlist."""
+    import argparse
+    from remove_duplicates import main as rd_main
+
+    # remove_duplicates.py already handles its own argparse,
+    # so just call it directly — sys.argv is already stripped.
+    rd_main()
 
 
 if __name__ == "__main__":

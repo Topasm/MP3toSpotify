@@ -134,6 +134,16 @@ ipcMain.handle("get-playlist-items", async (_event, options) => {
   return runPython("playlist_items", options);
 });
 
+// Remove duplicate tracks
+ipcMain.handle("remove-duplicates", async (_event, options) => {
+  return runPython("remove_duplicates.py", options);
+});
+
+// Scan for duplicates only (preview mode)
+ipcMain.handle("scan-duplicates", async (_event, options) => {
+  return runPython("remove_duplicates.py", { ...options, scanOnly: true });
+});
+
 // Cancel running process
 ipcMain.handle("cancel-process", async () => {
   killPython();
@@ -170,6 +180,7 @@ function runPython(script, options) {
       "addtracks": "addtracks",
       "listplaylists": "listplaylists",
       "search": "search",
+      "remove_duplicates.py": "remove_duplicates",
       "playlist_items": "playlist_items",
     };
     const command = commandMap[script] || "scan";
@@ -188,6 +199,8 @@ function runPython(script, options) {
     if (options.youtubeUrl) args.push("-u", options.youtubeUrl);
     if (options.trackIds) args.push("--tracks", options.trackIds);
     if (options.query) args.push("-q", options.query);
+    if (options.restoreFile) args.push("--restore", options.restoreFile);
+    if (options.scanOnly) args.push("--scan-only");
 
     // Set environment variables for Spotify credentials
     const env = { ...process.env };

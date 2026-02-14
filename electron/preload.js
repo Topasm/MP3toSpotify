@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("api", {
   listPlaylists: (options) => ipcRenderer.invoke("list-playlists", options),
   getPlaylistItems: (options) => ipcRenderer.invoke("get-playlist-items", options),
   search: (options) => ipcRenderer.invoke("search", options),
+  removeDuplicates: (options) => ipcRenderer.invoke("remove-duplicates", options),
+  scanDuplicates: (options) => ipcRenderer.invoke("scan-duplicates", options),
   cancelProcess: () => ipcRenderer.invoke("cancel-process"),
 
   // Listen for Python subprocess messages
