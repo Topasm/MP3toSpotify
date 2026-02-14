@@ -1,7 +1,9 @@
 # MP3toSpotify
 
+[![Build & Release](https://github.com/Topasm/MP3toSpotify/actions/workflows/release.yml/badge.svg)](https://github.com/Topasm/MP3toSpotify/actions/workflows/release.yml)
+
 Match your local music library to Spotify and automatically create playlists.  
-Available as both a **desktop GUI app** (Electron) and a **CLI tool**.
+Available as a **standalone desktop app** (Windows / macOS / Linux) and a **CLI tool**.
 
 Scans audio files, reads metadata (title & artist), searches Spotify, and adds matched songs to a playlist. Unmatched songs are saved for retry with advanced search strategies.
 
@@ -12,12 +14,30 @@ Scans audio files, reads metadata (title & artist), searches Spotify, and adds m
 - 🔄 Retry failed matches with bracket/feat. removal, title-only search
 - 🌏 Automatic encoding recovery (CJK mojibake fix via chardet)
 - 🔐 Secure credential management via environment variables
+- 📦 Standalone builds — no Python installation required
 
 > Originally forked from [BoscoDomingo/SpotifyMatcher](https://github.com/BoscoDomingo/SpotifyMatcher). Licensed under GPLv3.
 
 ---
 
-## Setup
+## Download
+
+**➡️ [Latest Release](https://github.com/Topasm/MP3toSpotify/releases/latest)**
+
+| Platform | File | Notes |
+|----------|------|-------|
+| **Windows** | `MP3toSpotify-Setup-*.exe` | Installer (NSIS) |
+| **Windows** | `MP3toSpotify-*.exe` | Portable (no install) |
+| **macOS** | `MP3toSpotify-*.dmg` | Drag to Applications |
+| **Linux** | `MP3toSpotify-*.AppImage` | `chmod +x` then run |
+
+> **No Python or Node.js installation required** — everything is bundled.
+
+---
+
+## Setup (from source)
+
+> Only needed if you want to run from source instead of using the prebuilt downloads above.
 
 ### 1. Prerequisites
 
@@ -129,6 +149,8 @@ Your username can be found at [Spotify Account Overview](https://www.spotify.com
 
 ```
 MP3toSpotify/
+├── .github/workflows/
+│   └── release.yml           # CI: auto-build Win/Mac/Linux on tag push
 ├── electron/                 # Electron desktop app
 │   ├── main.js               # Main process (window, IPC, subprocess)
 │   ├── preload.js            # Secure IPC bridge
@@ -137,6 +159,7 @@ MP3toSpotify/
 │       ├── styles.css        # Dark theme styling
 │       └── app.js            # Frontend logic
 ├── backend/                  # Python core
+│   ├── cli.py                # Unified entry point (PyInstaller)
 │   ├── main.py               # Scan local files → Spotify match
 │   ├── retry_failed.py       # Retry with advanced search strategies
 │   ├── spotify_client.py     # SpotifyClient class (API wrapper)
@@ -173,7 +196,20 @@ After:  거미 - 친구라도 될 걸 그랬어
 ## MP3toSpotify
 
 로컬 음악 파일을 Spotify에서 자동으로 매칭하여 플레이리스트를 생성합니다.  
-**데스크톱 GUI 앱** (Electron)과 **CLI 도구** 두 가지 방식으로 사용할 수 있습니다.
+**독립 실행형 데스크톱 앱** (Windows / macOS / Linux)과 **CLI 도구** 두 가지 방식으로 사용할 수 있습니다.
+
+### 다운로드
+
+**➡️ [최신 릴리즈 다운로드](https://github.com/Topasm/MP3toSpotify/releases/latest)**
+
+| 플랫폼 | 파일 | 비고 |
+|--------|------|------|
+| **Windows** | `MP3toSpotify-Setup-*.exe` | 설치형 |
+| **Windows** | `MP3toSpotify-*.exe` | 포터블 (설치 불필요) |
+| **macOS** | `MP3toSpotify-*.dmg` | Applications로 드래그 |
+| **Linux** | `MP3toSpotify-*.AppImage` | `chmod +x` 후 실행 |
+
+> **Python이나 Node.js 설치 불필요** — 모든 것이 내장되어 있습니다.
 
 ### 주요 기능
 
@@ -182,8 +218,9 @@ After:  거미 - 친구라도 될 걸 그랬어
 - 🔍 다중 검색 전략으로 Spotify 매칭 (괄호 제거, feat. 제거 등)
 - 🌏 인코딩 깨짐(mojibake) 자동 복구 — `chardet`를 이용해 CP949, Shift-JIS 등 레거시 인코딩 자동 감지
 - 🔐 환경변수 기반 크리덴셜 관리 (하드코딩 없음)
+- 📦 독립 실행형 빌드 — Python 설치 없이 바로 사용
 
-### 설치
+### 소스에서 설치 (개발자용)
 
 ```bash
 git clone https://github.com/Topasm/MP3toSpotify.git
