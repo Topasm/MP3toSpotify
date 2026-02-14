@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment variables (contains secrets)
+.env
+
+# Spotipy OAuth token cache
+.cache-*
+
+# Generated output files
+failed_matches.txt
+still_failed.txt
+Failed matches*.txt
+
+# OS files
+.DS_Store
+Thumbs.db
