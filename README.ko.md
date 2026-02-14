@@ -7,8 +7,8 @@
 로컬 음악 파일 또는 **YouTube 플레이리스트**를 Spotify에서 자동으로 매칭하여 플레이리스트를 생성합니다.  
 **독립 실행형 데스크톱 앱** (Windows / macOS / Linux)과 **CLI 도구** 두 가지 방식으로 사용할 수 있습니다.
 
-![MP3toSpotify Banner](banner.png)
-![MP3toSpotify GUI](./screenshot.png)
+![MP3toSpotify Banner](docs/banner.png)
+
 
 **주요 기능:**
 - 🖥️ Electron 기반 데스크톱 GUI — 실시간 진행 상황 표시
@@ -31,7 +31,6 @@
 
 | 플랫폼 | 파일 | 비고 |
 |--------|------|------|
-| **Windows** | `MP3toSpotify-Setup-*.exe` | 설치형 |
 | **Windows** | `MP3toSpotify-*.exe` | 포터블 (설치 불필요) |
 | **macOS** | `MP3toSpotify-*.dmg` | Applications로 드래그 |
 | **Linux** | `MP3toSpotify-*.AppImage` | `chmod +x` 후 실행 |
@@ -58,19 +57,31 @@
 
 ### 3. 음악 매칭
 
-| 탭 | 기능 |
-|----|------|
-| **Scan & Match** | 로컬 음악 폴더 선택 → 파일 스캔 → Spotify 매칭 |
+![Import Tab](docs/import_tab.png)
+
+| 섹션 (Section) | 기능 |
+|----------------|------|
+| **Local Music** | 로컬 음악 폴더 선택 → 파일 스캔 → Spotify 매칭 |
+| **YouTube Playlist** | YouTube 플레이리스트 URL 입력 → Spotify 매칭 |
 | **Retry Failed** | 매칭 실패 곡을 더 스마트한 검색 전략으로 재시도 |
-| **YouTube Import** | YouTube 플레이리스트 URL 입력 → Spotify 매칭 |
 
 **사용 흐름:**
-1. 소스 선택 (로컬 폴더, 실패 파일, 또는 YouTube URL)
-2. *(선택)* **📋 Browse** 버튼을 클릭하여 기존 Spotify 플레이리스트 선택
-3. **Start** 클릭 — 실시간 진행 상황 확인
-4. 결과 확인 (✓ 매칭 / ✗ 실패)
-5. **체크박스**로 추가할 곡 선택
-6. **"Add Selected to Playlist"** 클릭
+1. **Import** 탭으로 이동합니다.
+2. 소스를 선택하고 "Import" 또는 "Browse"를 클릭합니다.
+   - **Local Music**: 폴더 선택
+   - **YouTube**: URL 입력
+   - **Retry**: 실패 파일 선택
+3. 대시보드에서 실시간 진행 상황을 확인합니다 (Scanned / Matched / Failed).
+4. 완료되면 녹색 **"Review Songs"** 버튼을 클릭합니다.
+
+![Songs Tab](docs/songs_tab.png)
+
+5. **체크박스**로 추가할 곡을 선택합니다.
+6. **"Add to Playlist"**를 클릭합니다.
+7. **새 플레이리스트 생성** 또는 기존 플레이리스트 선택이 가능합니다.
+
+![Playlist Tab](docs/playlist_tab.png)
+
 
 **팁:**
 - 결과 필터링 — 전체, 매칭, 실패 보기
@@ -80,6 +91,8 @@
 ### 4. 음악 비교 모드 (Compare Mode)
 
 로컬 음악 파일과 기존 Spotify 플레이리스트를 비교하여 누락된 트랙을 쉽게 추가할 수 있습니다.
+
+![Compare Mode](docs/imported.png)
 
 1. **Playlist** 탭으로 이동합니다.
 2. 드롭다운에서 대상 플레이리스트를 선택합니다.

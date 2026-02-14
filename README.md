@@ -7,8 +7,8 @@
 Match your local music library **or YouTube playlists** to Spotify and automatically create playlists.  
 Available as a **standalone desktop app** (Windows / macOS / Linux) and a **CLI tool**.
 
-![MP3toSpotify Banner](banner.png)
-![MP3toSpotify GUI](./screenshot.png)
+![MP3toSpotify Banner](docs/banner.png)
+
 
 **Key Features:**
 - 🖥️ Modern desktop GUI (Electron) with real-time progress
@@ -18,6 +18,7 @@ Available as a **standalone desktop app** (Windows / macOS / Linux) and a **CLI 
 - 🔄 Retry failed matches with bracket/feat. removal, title-only search
 - ☑️ Checkbox-based track selection — choose which songs to add to your playlist
 - 📋 Browse & select existing Spotify playlists — no need to manually copy playlist IDs
+- 🆕 Create New Spotfy Playlists directly within the app
 - 🔀 Automatic duplicate detection (by track ID and display name)
 - 🌏 Automatic encoding recovery (CJK mojibake fix via chardet)
 - 📦 Standalone builds — no Python installation required
@@ -33,7 +34,6 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 
 | Platform | File | Notes |
 |----------|------|-------|
-| **Windows** | `MP3toSpotify-Setup-*.exe` | Installer (NSIS) |
 | **Windows** | `MP3toSpotify-*.exe` | Portable (no install) |
 | **macOS** | `MP3toSpotify-*.dmg` | Drag to Applications |
 | **Linux** | `MP3toSpotify-*.AppImage` | `chmod +x` then run |
@@ -60,19 +60,30 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 
 ### 3. Match Your Music
 
-| Tab | What it does |
-|-----|-------------|
-| **Scan & Match** | Select a local music folder → scans files → matches to Spotify |
+![Import Tab](docs/import_tab.png)
+
+| Section | What it does |
+|---------|-------------|
+| **Local Music** | Select a local music folder → scans files → matches to Spotify |
+| **YouTube Playlist** | Paste a YouTube playlist URL → matches to Spotify |
 | **Retry Failed** | Retry unmatched songs with smarter search strategies |
-| **YouTube Import** | Paste a YouTube playlist URL → matches to Spotify |
 
 **Step by step:**
-1. Pick your source (local folder, failed matches file, or YouTube URL)
-2. *(Optional)* Click **📋 Browse** to select an existing Spotify playlist
-3. Click **Start** — watch real-time progress
-4. Review results (✓ matched / ✗ failed)
-5. Use **checkboxes** to pick which songs to add
-6. Click **"Add Selected to Playlist"**
+1. Go to the **Import** tab.
+2. Choose your source:
+   - **Local Music**: Click "Browse" to select a folder, then "Import".
+   - **YouTube**: Paste a URL and click "Import".
+   - **Retry**: Select a failed matches file and click "Import".
+3. Watch real-time progress on the dashboard (Scanned / Matched / Failed).
+4. When finished, click the green **"Review Songs"** button.
+
+![Songs Tab](docs/songs_tab.png)
+
+5. Use **checkboxes** to pick which songs to add.
+6. Click **"Add to Playlist"**.
+7. You can **Create a New Playlist** directly or select an existing one.
+
+![Playlist Tab](docs/playlist_tab.png)
 
 **Tips:**
 - Filter results — view All, Matched only, or Failed only
@@ -80,20 +91,21 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 - Duplicate tracks are automatically skipped
 
 
-81: ### 4. Compare Mode
-82: 
-83: Compare your local music files with an existing Spotify playlist to easily add missing tracks.
-84: 
-85: 1. Go to the **Playlist** tab.
-86: 2. Select a target playlist from the dropdown.
-87: 3. Click **Compare**.
-88: 4. Review the results:
-89:    - Tracks already in the playlist are marked **"In Playlist"** and automatically unchecked.
-90:    - Missing tracks are marked **"Missing"** and remain checked.
-91: 5. Click **"Show Missing"** to filter the list.
-92: 6. Click **"Add to Playlist"** to add only the new tracks.
-93: 
-94: ---
+### 4. Compare Mode
+
+Compare your local music files with an existing Spotify playlist to easily add missing tracks.
+
+![Compare Mode](docs/imported.png)
+
+1. Go to the **Playlist** tab.
+2. Select a target playlist from the dropdown.
+3. Click **Compare**.
+4. Review the results:
+   - Tracks already in the playlist are marked **"In Playlist"** and automatically unchecked.
+   - Missing tracks are marked **"Missing"** and remain checked.
+5. Click **"Show Missing"** to filter the list.
+6. Click **"Add to Playlist"** to add only the new tracks. 
+---
 
 ## CLI Usage
 

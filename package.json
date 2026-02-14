@@ -1,6 +1,6 @@
 {
   "name": "mp3-to-spotify",
-  "version": "3.2.0",
+  "version": "3.4.0",
   "description": "Match local music files & YouTube playlists to Spotify — GUI & CLI",
   "author": "Topasm",
   "main": "electron/main.js",
@@ -20,7 +20,7 @@
       "electron/**/*"
     ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": ["portable"],
       "icon": "electron/assets/icon.ico",
       "extraResources": [
         {
