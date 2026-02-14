@@ -21,6 +21,7 @@ const els = {
   tabs: $$(".tab"),
   scanPanel: $("#scan-panel"),
   retryPanel: $("#retry-panel"),
+  youtubePanel: $("#youtube-panel"),
   settingsPanel: $("#settings-panel"),
 
   // Settings
@@ -43,6 +44,12 @@ const els = {
   retryPlaylistId: $("#retry-playlist-id"),
   btnStartRetry: $("#btn-start-retry"),
   btnCancelRetry: $("#btn-cancel-retry"),
+
+  // YouTube
+  youtubeUrl: $("#youtube-url"),
+  ytPlaylistId: $("#yt-playlist-id"),
+  btnStartYoutube: $("#btn-start-youtube"),
+  btnCancelYoutube: $("#btn-cancel-youtube"),
 
   // Results
   resultsSection: $("#results-section"),
@@ -88,6 +95,7 @@ function switchTab(tabName) {
   els.tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === tabName));
   els.scanPanel.style.display = tabName === "scan" ? "" : "none";
   els.retryPanel.style.display = tabName === "retry" ? "" : "none";
+  els.youtubePanel.style.display = tabName === "youtube" ? "" : "none";
   els.settingsPanel.style.display = tabName === "settings" ? "" : "none";
 }
 
@@ -159,8 +167,11 @@ function setRunning(running) {
   els.btnCancel.style.display = running ? "" : "none";
   els.btnStartRetry.style.display = running ? "none" : "";
   els.btnCancelRetry.style.display = running ? "" : "none";
+  els.btnStartYoutube.style.display = running ? "none" : "";
+  els.btnCancelYoutube.style.display = running ? "" : "none";
   els.btnStartScan.disabled = running;
   els.btnStartRetry.disabled = running;
+  els.btnStartYoutube.disabled = running;
   els.resultsSection.style.display = "";
 }
 
@@ -319,6 +330,39 @@ els.btnCancel.addEventListener("click", async () => {
 });
 
 els.btnCancelRetry.addEventListener("click", async () => {
+  await window.api.cancelProcess();
+  setRunning(false);
+  els.progressLabel.textContent = "Cancelled.";
+});
+
+// Start YouTube Import
+els.btnStartYoutube.addEventListener("click", async () => {
+  const creds = validateCredentials();
+  if (!creds) return;
+
+  const url = els.youtubeUrl.value.trim();
+  if (!url) {
+    alert("Please enter a YouTube playlist URL.");
+    return;
+  }
+
+  resetStats();
+  setRunning(true);
+  els.progressLabel.textContent = "Fetching YouTube playlist...";
+
+  if (state.cleanup) state.cleanup();
+  state.cleanup = window.api.onPythonMessage(handlePythonMessage);
+
+  await window.api.startYoutube({
+    username: creds.username,
+    clientId: creds.clientId,
+    clientSecret: creds.clientSecret,
+    youtubeUrl: url,
+    playlistId: els.ytPlaylistId.value.trim(),
+  });
+});
+
+els.btnCancelYoutube.addEventListener("click", async () => {
   await window.api.cancelProcess();
   setRunning(false);
   els.progressLabel.textContent = "Cancelled.";

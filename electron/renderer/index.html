@@ -18,6 +18,7 @@
       <div class="header-tabs">
         <button class="tab active" data-tab="scan">Scan &amp; Match</button>
         <button class="tab" data-tab="retry">Retry Failed</button>
+        <button class="tab" data-tab="youtube">YouTube Import</button>
         <button class="tab" data-tab="settings">Settings</button>
       </div>
     </header>
@@ -101,6 +102,35 @@
           <span class="btn-icon">🔄</span> Start Retry
         </button>
         <button id="btn-cancel-retry" class="btn btn-danger btn-lg" style="display:none;">
+          <span class="btn-icon">■</span> Cancel
+        </button>
+      </div>
+    </section>
+
+    <!-- YouTube Panel -->
+    <section id="youtube-panel" class="panel" style="display:none;">
+      <div class="card">
+        <h2>▶ YouTube Playlist URL</h2>
+        <div class="form-group">
+          <label for="youtube-url">Playlist or Video URL</label>
+          <input type="text" id="youtube-url" placeholder="https://www.youtube.com/playlist?list=PLxxxxxxx" spellcheck="false">
+        </div>
+        <p class="hint">Supports playlists, single videos, and YouTube Music URLs.</p>
+      </div>
+
+      <div class="card">
+        <h2>🎧 Spotify Playlist</h2>
+        <div class="form-group">
+          <label for="yt-playlist-id">Playlist ID <span class="optional">(optional — leave empty to create new)</span></label>
+          <input type="text" id="yt-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="btn-start-youtube" class="btn btn-primary btn-lg">
+          <span class="btn-icon">▶</span> Import from YouTube
+        </button>
+        <button id="btn-cancel-youtube" class="btn btn-danger btn-lg" style="display:none;">
           <span class="btn-icon">■</span> Cancel
         </button>
       </div>

@@ -74,6 +74,11 @@ ipcMain.handle("start-retry", async (_event, options) => {
   return runPython("retry_failed.py", options);
 });
 
+// Start YouTube import process
+ipcMain.handle("start-youtube", async (_event, options) => {
+  return runPython("youtube_import.py", options);
+});
+
 // Cancel running process
 ipcMain.handle("cancel-process", async () => {
   killPython();
@@ -103,7 +108,12 @@ function runPython(script, options) {
     }
 
     // Map script name → cli.py command
-    const command = script === "retry_failed.py" ? "retry" : "scan";
+    const commandMap = {
+      "main.py": "scan",
+      "retry_failed.py": "retry",
+      "youtube_import.py": "youtube",
+    };
+    const command = commandMap[script] || "scan";
     const exePath = getExePath();
     const args = [command, "--gui"];
 
@@ -113,6 +123,7 @@ function runPython(script, options) {
     if (options.playlistId) args.push("-p", options.playlistId);
     if (options.inputFile) args.push("-i", options.inputFile);
     if (options.outputFile) args.push("-o", options.outputFile);
+    if (options.youtubeUrl) args.push("-u", options.youtubeUrl);
 
     // Set environment variables for Spotify credentials
     const env = { ...process.env };
