@@ -4,8 +4,11 @@
 
 > **🌐 Language / 언어:** [English](README.md) · **한국어**
 
-로컬 음악 파일 또는 **YouTube 플레이리스트**를 Spotify에서 자동으로 매칭하여 플레이리스트를 생성합니다.  
-**독립 실행형 데스크톱 앱** (Windows / macOS / Linux)과 **CLI 도구** 두 가지 방식으로 사용할 수 있습니다.
+**최고의 음악 마이그레이션 도구 (The Ultimate Music Migration Tool)**
+
+**로컬 음악 라이브러리**와 **YouTube 플레이리스트**를 Spotify와 손쉽게 동기화하세요.  
+**Compare Mode(비교 모드)**를 사용하여 플레이리스트에서 누락된 곡을 찾아 즉시 채울 수 있습니다.  
+모던한 **데스크톱 앱** (Windows / macOS / Linux) 및 **CLI**로 제공됩니다.
 
 ![MP3toSpotify Banner](docs/banner.png)
 

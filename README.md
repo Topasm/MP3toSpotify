@@ -4,8 +4,11 @@
 
 > **🌐 Language / 언어:** **English** · [한국어](README.ko.md)
 
-Match your local music library **or YouTube playlists** to Spotify and automatically create playlists.  
-Available as a **standalone desktop app** (Windows / macOS / Linux) and a **CLI tool**.
+**The Ultimate Music Migration Tool.**
+
+Effortlessly sync your **Local Music Library** and **YouTube Playlists** to Spotify.  
+Use **Compare Mode** to find missing tracks in your playlists and fill the gaps instantly.  
+Available as a modern **Desktop App** (Windows / macOS / Linux) and **CLI**.
 
 ![MP3toSpotify Banner](docs/banner.png)
 
