@@ -77,7 +77,7 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 3. Watch real-time progress on the dashboard (Scanned / Matched / Failed).
 4. When finished, click the green **"Review Songs"** button.
 
-![Songs Tab](docs/songs_tab.png)
+![Import Success](docs/imported.png)
 
 5. Use **checkboxes** to pick which songs to add.
 6. Click **"Add to Playlist"**.
@@ -95,7 +95,7 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 
 Compare your local music files with an existing Spotify playlist to easily add missing tracks.
 
-![Compare Mode](docs/imported.png)
+![Compare Mode](docs/compare_mode.png)
 
 1. Go to the **Playlist** tab.
 2. Select a target playlist from the dropdown.
@@ -239,14 +239,7 @@ MP3toSpotify/
 └── LICENSE                    # GPLv3
 ```
 
-### How Encoding Recovery Works
 
-Many MP3 files (especially Korean, Japanese, Chinese) have ID3v1 tags encoded in legacy formats (CP949, Shift-JIS, etc.). When read as Latin-1, text becomes garbled (mojibake). MP3toSpotify automatically fixes this:
-
-```
-Before: °Å¹Ì - Ä£±¸¶óµµ µÉ °É ±×·¨¾î
-After:  거미 - 친구라도 될 걸 그랬어
-```
 
 ---
 

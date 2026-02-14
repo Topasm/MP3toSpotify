@@ -74,14 +74,13 @@
 3. 대시보드에서 실시간 진행 상황을 확인합니다 (Scanned / Matched / Failed).
 4. 완료되면 녹색 **"Review Songs"** 버튼을 클릭합니다.
 
-![Songs Tab](docs/songs_tab.png)
+![Import Success](docs/imported.png)
 
 5. **체크박스**로 추가할 곡을 선택합니다.
 6. **"Add to Playlist"**를 클릭합니다.
 7. **새 플레이리스트 생성** 또는 기존 플레이리스트 선택이 가능합니다.
 
 ![Playlist Tab](docs/playlist_tab.png)
-
 
 **팁:**
 - 결과 필터링 — 전체, 매칭, 실패 보기
@@ -92,7 +91,7 @@
 
 로컬 음악 파일과 기존 Spotify 플레이리스트를 비교하여 누락된 트랙을 쉽게 추가할 수 있습니다.
 
-![Compare Mode](docs/imported.png)
+![Compare Mode](docs/compare_mode.png)
 
 1. **Playlist** 탭으로 이동합니다.
 2. 드롭다운에서 대상 플레이리스트를 선택합니다.
@@ -237,14 +236,7 @@ MP3toSpotify/
 └── LICENSE                    # GPLv3
 ```
 
-### 인코딩 복구 원리
 
-많은 MP3 파일 (특히 한국어, 일본어, 중국어)이 레거시 형식 (CP949, Shift-JIS 등)으로 인코딩된 ID3v1 태그를 가지고 있습니다. Latin-1으로 읽으면 텍스트가 깨집니다 (mojibake). MP3toSpotify는 이를 자동으로 수정합니다:
-
-```
-수정 전: °Å¹Ì - Ä£±¸¶óµµ µÉ °É ±×·¨¾î
-수정 후: 거미 - 친구라도 될 걸 그랬어
-```
 
 ---
 
