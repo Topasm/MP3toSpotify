@@ -16,16 +16,12 @@
     "appId": "com.topasm.mp3tospotify",
     "productName": "MP3toSpotify",
     "files": [
-      "electron/**/*",
-      "backend/**/*",
-      "!backend/__pycache__/**",
-      "!backend/*.pyc"
+      "electron/**/*"
     ],
     "extraResources": [
       {
-        "from": "backend",
-        "to": "backend",
-        "filter": ["**/*.py", "requirements.txt"]
+        "from": "backend/dist/mp3tospotify.exe",
+        "to": "backend/mp3tospotify.exe"
       }
     ],
     "win": {

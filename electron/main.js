@@ -8,14 +8,6 @@ const { spawn } = require("child_process");
 let mainWindow = null;
 let pythonProcess = null;
 
-// Resolve backend path (works in dev and packaged builds)
-function getBackendPath() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, "backend");
-  }
-  return path.join(__dirname, "..", "backend");
-}
-
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 960,
@@ -90,6 +82,18 @@ ipcMain.handle("cancel-process", async () => {
 
 // ── Python Subprocess Management ──────────────────────────────────────────
 
+/**
+ * Resolve the path to the bundled mp3tospotify executable.
+ * - Packaged (asar): process.resourcesPath/backend/mp3tospotify.exe
+ * - Development:      <project>/backend/dist/mp3tospotify.exe
+ */
+function getExePath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "backend", "mp3tospotify.exe");
+  }
+  return path.join(__dirname, "..", "backend", "dist", "mp3tospotify.exe");
+}
+
 function runPython(script, options) {
   return new Promise((resolve) => {
     if (pythonProcess) {
@@ -97,9 +101,10 @@ function runPython(script, options) {
       return;
     }
 
-    const backendPath = getBackendPath();
-    const scriptPath = path.join(backendPath, script);
-    const args = [scriptPath, "--gui"];
+    // Map script name → cli.py command
+    const command = script === "retry_failed.py" ? "retry" : "scan";
+    const exePath = getExePath();
+    const args = [command, "--gui"];
 
     // Build argument list from options
     if (options.username) args.push(options.username);
@@ -113,8 +118,7 @@ function runPython(script, options) {
     if (options.clientId) env.SPOTIPY_CLIENT_ID = options.clientId;
     if (options.clientSecret) env.SPOTIPY_CLIENT_SECRET = options.clientSecret;
 
-    pythonProcess = spawn("python", args, {
-      cwd: backendPath,
+    pythonProcess = spawn(exePath, args, {
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -157,7 +161,7 @@ function runPython(script, options) {
     pythonProcess.on("error", (err) => {
       pythonProcess = null;
       const msg = err.message.includes("ENOENT")
-        ? "Python not found. Please install Python 3.10+ and ensure it's in your PATH."
+        ? "Backend executable not found. The application may be corrupted — please reinstall."
         : `Failed to start process: ${err.message}`;
       mainWindow?.webContents.send("python-message", {
         type: "error",
