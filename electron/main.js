@@ -93,6 +93,10 @@ ipcMain.handle("search", async (_event, options) => {
   return runPython("search", options);
 });
 
+ipcMain.handle("get-playlist-items", async (_event, options) => {
+  return runPython("playlist_items", options);
+});
+
 // Cancel running process
 ipcMain.handle("cancel-process", async () => {
   killPython();
@@ -129,6 +133,7 @@ function runPython(script, options) {
       "addtracks": "addtracks",
       "listplaylists": "listplaylists",
       "search": "search",
+      "playlist_items": "playlist_items",
     };
     const command = commandMap[script] || "scan";
     const exePath = getExePath();

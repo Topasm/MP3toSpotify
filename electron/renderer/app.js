@@ -355,7 +355,18 @@ function getSongItemHtml(song, idx) {
     <span class="song-icon ${iconClass}">${icon}</span>
     <span class="song-name">${escapeHtml(song.name)}</span>
     ${actionsHtml}
+    ${getBadgeHtml(song)}
   `;
+}
+
+function getBadgeHtml(song) {
+  if (typeof song.inComparePlaylist !== "boolean") return "";
+  
+  if (song.inComparePlaylist) {
+    return `<span style="font-size:0.7rem; color:var(--text-secondary); background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; margin-left:8px; display:inline-block; vertical-align:middle;">In Playlist</span>`;
+  } else {
+    return `<span style="font-size:0.7rem; color:#ff4444; background:rgba(255,68,68,0.1); padding:2px 6px; border-radius:4px; margin-left:8px; display:inline-block; vertical-align:middle;">Missing</span>`;
+  }
 }
 
 // Add event listener for Fix button
@@ -369,7 +380,12 @@ els.songList.addEventListener("click", (e) => {
 
 function renderSongItem(song, idx) {
   // Only used by full re-renders (filtering, sort, etc)
-  if (state.filter !== "all" && state.filter !== song.status) return;
+  if (state.filter === "missing_from_playlist") {
+    // Show only matched songs that are NOT in the playlist
+    if (song.status !== "matched" || song.inComparePlaylist !== false) return;
+  } else if (state.filter !== "all" && state.filter !== song.status) {
+    return;
+  }
 
   const row = document.createElement("div");
   row.className = `song-item song-${song.status}`;
@@ -630,6 +646,11 @@ function renderPlaylists(playlists) {
     div.addEventListener("click", () => addToPlaylist(p.id, ""));
     els.playlistList.appendChild(div);
   });
+  
+  // Update comparison dropdown
+  if (window.compareLogic) {
+    window.compareLogic.populateDropdown(playlists);
+  }
 }
 
 async function addToPlaylist(playlistId, playlistName) {
@@ -683,6 +704,118 @@ els.btnCreateAndAdd.addEventListener("click", () => {
 
 // Refresh playlists
 els.btnRefreshPlaylists.addEventListener("click", loadPlaylists);
+
+// ── Playlist Comparison Logic ─────────────────────────────────────────────
+window.compareLogic = {
+  playlistSelect: document.querySelector("#compare-playlist-select"),
+  btnCompare: document.querySelector("#btn-compare"),
+  resultsDiv: document.querySelector("#compare-results"),
+  
+  init() {
+    this.btnCompare.addEventListener("click", () => this.runComparison());
+    this.playlistSelect.addEventListener("change", () => {
+      this.btnCompare.disabled = !this.playlistSelect.value;
+      this.resultsDiv.style.display = "none";
+    });
+  },
+
+  populateDropdown(playlists) {
+    this.playlistSelect.innerHTML = '<option value="">Select a playlist to compare...</option>';
+    
+    (playlists || []).forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `${p.name} (${p.tracks_total} tracks)`;
+      this.playlistSelect.appendChild(opt);
+    });
+  },
+
+  async runComparison() {
+    const playlistId = this.playlistSelect.value;
+    if (!playlistId) return;
+
+    const creds = validateCredentials();
+    if (!creds) return;
+
+    this.btnCompare.disabled = true;
+    this.btnCompare.textContent = "Comparing...";
+    this.resultsDiv.style.display = "none";
+
+    try {
+      const response = await window.api.getPlaylistItems({
+        username: creds.username,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+        playlistId
+      });
+      
+      if (!Array.isArray(response)) {
+        throw new Error(response.error || "Invalid response: " + JSON.stringify(response));
+      }
+
+      const remoteTracks = response;
+
+      // Create a Set of remote track IDs for O(1) lookup
+      const remoteIdSet = new Set(remoteTracks.map(t => t.id).filter(Boolean));
+
+      let inPlaylistCount = 0;
+      let missingCount = 0;
+
+      // Iterate through local MATCHED songs
+      state.songs.forEach(song => {
+        if (song.status === "matched" && song.trackId) {
+          const isIn = remoteIdSet.has(song.trackId);
+          song.inComparePlaylist = isIn; // Tag the song
+          if (isIn) {
+            inPlaylistCount++;
+            song.checked = false; // Auto-uncheck duplicates
+          }
+          else missingCount++;
+        } else {
+          song.inComparePlaylist = false; // Not applicable
+        }
+      });
+
+      // Update UI
+      this.showResults(inPlaylistCount, missingCount);
+      rerenderSongList(); // Re-render to show badges
+
+    } catch (err) {
+      console.error(err);
+      this.resultsDiv.textContent = `Error: ${err.message}`;
+      this.resultsDiv.className = "status-badge status-failed";
+      this.resultsDiv.style.display = "block";
+    } finally {
+      this.btnCompare.disabled = false;
+      this.btnCompare.textContent = "Compare";
+    }
+  },
+
+  showResults(inCount, missingCount) {
+    this.resultsDiv.style.display = "flex";
+    this.resultsDiv.className = "status-badge status-neutral";
+    this.resultsDiv.style.justifyContent = "space-between";
+    this.resultsDiv.style.width = "100%";
+    
+    // Safety check for button if re-rendering
+    // But we are setting innerHTML so it's fresh
+    this.resultsDiv.innerHTML = `
+      <span>
+        <span style="color:var(--accent);">●</span> ${inCount} In Playlist
+        <span style="color:var(--text-secondary);margin:0 8px;">|</span>
+        <span style="color:var(--danger);">●</span> <strong>${missingCount} Missing</strong>
+      </span>
+      <button id="btn-filter-missing" class="btn btn-sm btn-secondary" style="padding:2px 8px;font-size:0.75rem;">Show Missing</button>
+    `;
+
+    this.resultsDiv.querySelector("#btn-filter-missing").addEventListener("click", () => {
+      // Custom filter logic
+      filterSongs("missing_from_playlist");
+    });
+  }
+};
+
+window.compareLogic.init();
 
 // ── Init ──────────────────────────────────────────────────────────────────
 loadSettings();

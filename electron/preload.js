@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("api", {
   startYoutube: (options) => ipcRenderer.invoke("start-youtube", options),
   addTracks: (options) => ipcRenderer.invoke("add-tracks", options),
   listPlaylists: (options) => ipcRenderer.invoke("list-playlists", options),
+  getPlaylistItems: (options) => ipcRenderer.invoke("get-playlist-items", options),
   search: (options) => ipcRenderer.invoke("search", options),
   cancelProcess: () => ipcRenderer.invoke("cancel-process"),
 

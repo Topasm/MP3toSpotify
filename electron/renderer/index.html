@@ -163,6 +163,17 @@
           <h2>📋 Your Playlists</h2>
           <button id="btn-refresh-playlists" class="btn btn-secondary btn-sm">Refresh</button>
         </div>
+        
+        <div class="playlist-controls" style="margin-bottom: 12px; display: flex; gap: 8px;">
+          <select id="compare-playlist-select" class="playlist-dropdown">
+            <option value="">Select a playlist to compare...</option>
+          </select>
+          <button id="btn-compare" class="btn btn-primary" disabled>Compare</button>
+        </div>
+        <div id="compare-results" style="margin-bottom: 12px; display: none;" class="status-badge status-neutral">
+          <!-- Comparison results validation text -->
+        </div>
+
         <div id="playlist-list" class="playlist-list">
           <div class="loading-spinner">Click Refresh to load your playlists.</div>
         </div>

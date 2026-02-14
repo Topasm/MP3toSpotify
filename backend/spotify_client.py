@@ -82,6 +82,19 @@ class SpotifyClient:
         Returns:
             Track ID of the first result, or None if no match found.
         """
+        # 1. Try exact search
+        tid = self._do_search(query, limit)
+        if tid:
+            return tid
+
+        # 2. Try cleaned search (remove parens/brackets)
+        cleaned_query = self._clean_query(query)
+        if cleaned_query != query:
+            return self._do_search(cleaned_query, limit)
+        
+        return None
+
+    def _do_search(self, query: str, limit: int) -> str | None:
         try:
             results = self.sp.search(query, limit=limit)
             items = results["tracks"]["items"]
@@ -103,6 +116,19 @@ class SpotifyClient:
         Returns:
             List of track dicts: {id, name, artist, album, url, image}
         """
+        # 1. Try exact
+        candidates = self._do_search_candidates(query, limit)
+        if candidates:
+            return candidates
+
+        # 2. Try cleaned
+        cleaned_query = self._clean_query(query)
+        if cleaned_query != query:
+            return self._do_search_candidates(cleaned_query, limit)
+            
+        return []
+
+    def _do_search_candidates(self, query: str, limit: int) -> list[dict]:
         try:
             results = self.sp.search(query, limit=limit, type="track")
             if not results or "tracks" not in results or "items" not in results["tracks"]:
@@ -113,7 +139,6 @@ class SpotifyClient:
             for item in items:
                 image = None
                 if item["album"]["images"]:
-                    # Try to pick a small thumbnail (usually last one)
                     image = item["album"]["images"][-1]["url"]
 
                 candidates.append({
@@ -127,6 +152,13 @@ class SpotifyClient:
             return candidates
         except Exception:
             return []
+
+    def _clean_query(self, query: str) -> str:
+        """Remove text within parentheses or brackets."""
+        import re
+        # Remove (...) and [...] content
+        cleaned = re.sub(r'\s*[\(\[][^)\]]*[\)\]]', '', query)
+        return cleaned.strip()
 
     def ensure_playlist(self, playlist_id: str = "", name: str = "MP3toSpotify") -> str:
         """Validate an existing playlist or create a new one.
@@ -242,3 +274,50 @@ class SpotifyClient:
             return []
         
         return playlists
+
+    def get_playlist_items(self, playlist_id: str) -> list[dict]:
+        """Get all tracks in a playlist.
+        
+        Args:
+            playlist_id: The Spotify ID of the playlist.
+            
+        Returns:
+            List of track dicts: {id, name, artist, album}
+        """
+        results = []
+        try:
+            # Use offset based pagination similar to playlist_add_items
+            offset = 0
+            while True:
+                response = self.sp.playlist_items(
+                    playlist_id, 
+                    offset=offset, 
+                    # Request only necessary fields to reduce payload size
+                    fields="items.track(id,name,artists,album(name)),next",
+                    additional_types=("track",)
+                )
+                
+                if not response or "items" not in response:
+                    break
+                
+                for item in response["items"]:
+                    track = item.get("track")
+                    # Track can be None or sometimes local files without ID
+                    if track and track.get("id"):
+                        results.append({
+                            "id": track["id"],
+                            "name": track["name"],
+                            "artist": track["artists"][0]["name"] if track["artists"] else "Unknown",
+                            "album": track["album"]["name"] if track["album"] else "Unknown"
+                        })
+                
+                if not response.get("next"):
+                    break
+                    
+                offset += len(response["items"])
+                
+        except Exception:
+            # Return partial results or empty list on error
+            return results
+            
+        return results

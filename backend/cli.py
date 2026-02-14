@@ -97,7 +97,9 @@ def main() -> None:
             "  retry     <username> [options]            Retry failed matches\n"
             "  youtube   <username> -u <url> [options]   Import YouTube playlist\n"
             "  addtracks <username> --tracks id1,id2,..  Add tracks to playlist\n"
-            "  listplaylists <username>                  List user's playlists\n\n"
+            "  listplaylists <username>                  List user's playlists\n"
+            "  search    <username> -q <query>           Search for tracks\n"
+            "  playlist_items <username> -p <id>         Get playlist items\n\n"
             "Examples:\n"
             '  mp3tospotify scan myuser -d "C:/Music"\n'
             "  mp3tospotify retry myuser -i failed_matches.txt\n"
@@ -124,6 +126,8 @@ def main() -> None:
         _list_playlists_main()
     elif command == "search":
         _search_main()
+    elif command == "playlist_items":
+        _playlist_items_main()
     else:
         print(f"Unknown command: {command}")
         print("Use 'scan', 'retry', 'youtube', 'addtracks', 'listplaylists', or 'search'.")
@@ -144,6 +148,22 @@ def _search_main() -> None:
     client = SpotifyClient(args.username)
     results = client.search_candidates(args.query)
     print(json.dumps(results, ensure_ascii=False), flush=True)
+
+
+def _playlist_items_main() -> None:
+    """Get all tracks in a playlist (called from GUI)."""
+    import argparse
+    from spotify_client import SpotifyClient
+    
+    parser = argparse.ArgumentParser(description="Get playlist tracks")
+    parser.add_argument("username")
+    parser.add_argument("-p", "--playlist-id", required=True)
+    parser.add_argument("--gui", action="store_true", help="Run in GUI mode (ignored)")
+    args = parser.parse_args()
+
+    client = SpotifyClient(args.username)
+    items = client.get_playlist_items(args.playlist_id)
+    print(json.dumps(items, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
