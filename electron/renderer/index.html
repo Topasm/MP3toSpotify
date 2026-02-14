@@ -20,14 +20,156 @@
         <h1>MP3toSpotify</h1>
       </div>
       <div class="header-tabs">
-        <button class="tab active" data-tab="scan">Scan &amp; Match</button>
-        <button class="tab" data-tab="retry">Retry Failed</button>
-        <button class="tab" data-tab="youtube">YouTube Import</button>
-        <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab active" data-tab="import">📥 Import</button>
+        <button class="tab" data-tab="songs">🎵 Songs <span id="tab-song-count" class="tab-badge" style="display:none;">0</span></button>
+        <button class="tab" data-tab="playlist">📋 Playlist</button>
+        <button class="tab" data-tab="settings">⚙️ Settings</button>
       </div>
     </header>
 
-    <!-- Settings Panel (Spotify Credentials) -->
+    <!-- ═══ IMPORT TAB ═══ -->
+    <section id="import-panel" class="panel">
+      <!-- Progress (shown during import) -->
+      <div id="import-progress" class="progress-container" style="display:none;">
+        <div class="progress-header">
+          <span id="progress-label">Importing...</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+        <div class="progress-actions">
+          <button id="btn-cancel" class="btn btn-danger btn-sm">
+            <span class="btn-icon">■</span> Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Local Folder Import -->
+      <div class="card import-card">
+        <div class="import-card-header">
+          <h2>📂 Local Music</h2>
+          <button id="btn-start-scan" class="btn btn-primary btn-sm">Import</button>
+        </div>
+        <div class="input-row">
+          <input type="text" id="music-dir" placeholder="Select your music folder..." readonly>
+          <button id="btn-select-folder" class="btn btn-secondary btn-sm">Browse</button>
+        </div>
+      </div>
+
+      <!-- YouTube Import -->
+      <div class="card import-card">
+        <div class="import-card-header">
+          <h2>▶️ YouTube Playlist</h2>
+          <button id="btn-start-youtube" class="btn btn-primary btn-sm">Import</button>
+        </div>
+        <input type="text" id="youtube-url" placeholder="https://www.youtube.com/playlist?list=PLxxxxxxx" spellcheck="false">
+        <p class="hint">Supports playlists, single videos, and YouTube Music URLs.</p>
+      </div>
+
+      <!-- Retry Failed -->
+      <div class="card import-card">
+        <div class="import-card-header">
+          <h2>🔄 Retry Failed</h2>
+          <button id="btn-start-retry" class="btn btn-primary btn-sm">Import</button>
+        </div>
+        <div class="input-row">
+          <input type="text" id="retry-input" placeholder="Select failed matches file..." readonly>
+          <button id="btn-select-file" class="btn btn-secondary btn-sm">Browse</button>
+        </div>
+      </div>
+
+      <!-- Import summary -->
+      <div id="import-summary" class="import-summary" style="display:none;">
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="stat-value" id="stat-scanned">0</span>
+            <span class="stat-label">Scanned</span>
+          </div>
+          <div class="stat-card stat-success">
+            <span class="stat-value" id="stat-matched">0</span>
+            <span class="stat-label">Matched</span>
+          </div>
+          <div class="stat-card stat-fail">
+            <span class="stat-value" id="stat-failed">0</span>
+            <span class="stat-label">Failed</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="stat-rate">0%</span>
+            <span class="stat-label">Rate</span>
+          </div>
+        </div>
+        <button id="btn-go-to-songs" class="btn btn-primary btn-lg btn-full-width">
+          Review Songs →
+        </button>
+      </div>
+    </section>
+
+    <!-- ═══ SONGS TAB ═══ -->
+    <section id="songs-panel" class="panel" style="display:none;">
+      <div class="song-list-container">
+        <div class="song-list-header">
+          <div class="song-list-header-left">
+            <h3>All Imported Songs</h3>
+            <span id="selected-count" class="selected-count">0 selected</span>
+          </div>
+          <div class="song-list-header-right">
+            <div class="filter-buttons">
+              <button class="filter-btn active" data-filter="all">All</button>
+              <button class="filter-btn" data-filter="matched">✓ Matched</button>
+              <button class="filter-btn" data-filter="failed">✗ Failed</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="song-toolbar">
+          <label class="checkbox-label toolbar-select-all">
+            <input type="checkbox" id="select-all-checkbox" checked>
+            <span>Select All Matched</span>
+          </label>
+          <button id="btn-go-to-playlist" class="btn btn-primary btn-add-playlist">
+            Add to Playlist →
+          </button>
+        </div>
+
+        <div id="song-list" class="song-list">
+          <div class="empty-state">
+            <p>No songs imported yet.</p>
+            <p class="hint">Go to the <strong>Import</strong> tab to add songs from your music folder or YouTube.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PLAYLIST TAB ═══ -->
+    <section id="playlist-panel" class="panel" style="display:none;">
+      <!-- Create New -->
+      <div class="card">
+        <h2>✨ Create New Playlist</h2>
+        <div class="input-row">
+          <input type="text" id="new-playlist-name" placeholder="My awesome playlist..." spellcheck="false">
+          <button id="btn-create-and-add" class="btn btn-primary">Create & Add</button>
+        </div>
+        <p class="hint" id="playlist-add-status"></p>
+      </div>
+
+      <div class="section-divider">
+        <span>or add to existing playlist</span>
+      </div>
+
+      <!-- Existing Playlists -->
+      <div class="card">
+        <div class="import-card-header">
+          <h2>📋 Your Playlists</h2>
+          <button id="btn-refresh-playlists" class="btn btn-secondary btn-sm">Refresh</button>
+        </div>
+        <div id="playlist-list" class="playlist-list">
+          <div class="loading-spinner">Click Refresh to load your playlists.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SETTINGS TAB ═══ -->
     <section id="settings-panel" class="panel" style="display:none;">
       <div class="card">
         <h2>🔑 Spotify Credentials</h2>
@@ -54,174 +196,6 @@
         </div>
       </div>
     </section>
-
-    <!-- Scan Panel -->
-    <section id="scan-panel" class="panel">
-      <div class="card">
-        <h2>📂 Music Directory</h2>
-        <div class="input-row">
-          <input type="text" id="music-dir" placeholder="Select your music folder..." readonly>
-          <button id="btn-select-folder" class="btn btn-secondary">Browse</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>🎧 Playlist</h2>
-        <div class="form-group">
-          <label for="playlist-id">Playlist ID <span class="optional">(optional — leave empty to create new)</span></label>
-          <div class="input-row">
-            <input type="text" id="playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
-            <button class="btn btn-secondary btn-browse-playlist" data-target="playlist-id">📋 Browse</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="action-bar">
-        <button id="btn-start-scan" class="btn btn-primary btn-lg">
-          <span class="btn-icon">▶</span> Start Scanning
-        </button>
-        <button id="btn-cancel" class="btn btn-danger btn-lg" style="display:none;">
-          <span class="btn-icon">■</span> Cancel
-        </button>
-      </div>
-    </section>
-
-    <!-- Retry Panel -->
-    <section id="retry-panel" class="panel" style="display:none;">
-      <div class="card">
-        <h2>📄 Failed Matches File</h2>
-        <div class="input-row">
-          <input type="text" id="retry-input" placeholder="Select failed matches file..." readonly>
-          <button id="btn-select-file" class="btn btn-secondary">Browse</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>🎧 Playlist</h2>
-        <div class="form-group">
-          <label for="retry-playlist-id">Playlist ID <span class="optional">(optional)</span></label>
-          <div class="input-row">
-            <input type="text" id="retry-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
-            <button class="btn btn-secondary btn-browse-playlist" data-target="retry-playlist-id">📋 Browse</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="action-bar">
-        <button id="btn-start-retry" class="btn btn-primary btn-lg">
-          <span class="btn-icon">🔄</span> Start Retry
-        </button>
-        <button id="btn-cancel-retry" class="btn btn-danger btn-lg" style="display:none;">
-          <span class="btn-icon">■</span> Cancel
-        </button>
-      </div>
-    </section>
-
-    <!-- YouTube Panel -->
-    <section id="youtube-panel" class="panel" style="display:none;">
-      <div class="card">
-        <h2>▶ YouTube Playlist URL</h2>
-        <div class="form-group">
-          <label for="youtube-url">Playlist or Video URL</label>
-          <input type="text" id="youtube-url" placeholder="https://www.youtube.com/playlist?list=PLxxxxxxx" spellcheck="false">
-        </div>
-        <p class="hint">Supports playlists, single videos, and YouTube Music URLs.</p>
-      </div>
-
-      <div class="card">
-        <h2>🎧 Spotify Playlist</h2>
-        <div class="form-group">
-          <label for="yt-playlist-id">Playlist ID <span class="optional">(optional — leave empty to create new)</span></label>
-          <div class="input-row">
-            <input type="text" id="yt-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
-            <button class="btn btn-secondary btn-browse-playlist" data-target="yt-playlist-id">📋 Browse</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="action-bar">
-        <button id="btn-start-youtube" class="btn btn-primary btn-lg">
-          <span class="btn-icon">▶</span> Import from YouTube
-        </button>
-        <button id="btn-cancel-youtube" class="btn btn-danger btn-lg" style="display:none;">
-          <span class="btn-icon">■</span> Cancel
-        </button>
-      </div>
-    </section>
-
-    <!-- Progress & Results (shared across tabs) -->
-    <section id="results-section" class="results-section" style="display:none;">
-      <!-- Progress Bar -->
-      <div class="progress-container">
-        <div class="progress-header">
-          <span id="progress-label">Scanning...</span>
-          <span id="progress-pct">0%</span>
-        </div>
-        <div class="progress-bar-track">
-          <div id="progress-bar" class="progress-bar-fill"></div>
-        </div>
-      </div>
-
-      <!-- Stats Cards -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <span class="stat-value" id="stat-scanned">0</span>
-          <span class="stat-label">Scanned</span>
-        </div>
-        <div class="stat-card stat-success">
-          <span class="stat-value" id="stat-matched">0</span>
-          <span class="stat-label">Matched</span>
-        </div>
-        <div class="stat-card stat-fail">
-          <span class="stat-value" id="stat-failed">0</span>
-          <span class="stat-label">Failed</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="stat-rate">0%</span>
-          <span class="stat-label">Success Rate</span>
-        </div>
-      </div>
-
-      <!-- Song List -->
-      <div class="song-list-container">
-        <div class="song-list-header">
-          <h3>Results</h3>
-          <div class="filter-buttons">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="matched">✓ Matched</button>
-            <button class="filter-btn" data-filter="failed">✗ Failed</button>
-          </div>
-        </div>
-        <!-- Playlist Toolbar (shown after scan completes) -->
-        <div id="playlist-toolbar" class="playlist-toolbar" style="display:none;">
-          <label class="checkbox-label toolbar-select-all">
-            <input type="checkbox" id="select-all-checkbox" checked>
-            <span>Select All</span>
-          </label>
-          <span id="selected-count" class="selected-count">0 selected</span>
-          <button id="btn-add-to-playlist" class="btn btn-primary btn-add-playlist">
-            <span class="btn-icon">➕</span> Add Selected to Playlist
-          </button>
-        </div>
-        <div id="song-list" class="song-list"></div>
-      </div>
-    </section>
-
-    <!-- Playlist Picker Modal -->
-    <div id="playlist-modal" class="modal" style="display:none;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Select a Playlist</h2>
-          <span class="close-modal">&times;</span>
-        </div>
-        <div class="modal-body">
-          <div id="playlist-list" class="playlist-list">
-            <!-- Playlists injected here -->
-            <div class="loading-spinner">Loading playlists...</div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <script src="app.js"></script>

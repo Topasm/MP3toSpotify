@@ -145,6 +145,9 @@ function runPython(script, options) {
     const env = { ...process.env };
     if (options.clientId) env.SPOTIPY_CLIENT_ID = options.clientId;
     if (options.clientSecret) env.SPOTIPY_CLIENT_SECRET = options.clientSecret;
+    // Force UTF-8 output from the Python executable (critical for CJK characters on Windows)
+    env.PYTHONIOENCODING = "utf-8";
+    env.PYTHONUTF8 = "1";
 
     let resolved = false;
 
@@ -152,6 +155,9 @@ function runPython(script, options) {
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });
+
+    // Ensure stdout is decoded as UTF-8
+    pythonProcess.stdout.setEncoding("utf-8");
 
     pythonProcess.stdout.on("data", (data) => {
       const str = data.toString();

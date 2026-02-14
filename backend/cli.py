@@ -16,8 +16,17 @@ Usage (when bundled as mp3tospotify.exe):
 
 from __future__ import annotations
 
-import json
 import sys
+import os
+import json
+
+# Force UTF-8 stdout/stderr on Windows (critical for CJK characters in PyInstaller builds)
+if sys.platform == "win32":
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
 
 
 def _add_tracks_main() -> None:
