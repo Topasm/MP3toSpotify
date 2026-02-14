@@ -453,6 +453,62 @@ input[readonly] {
   flex-shrink: 0;
 }
 
+/* ── Song Checkboxes ───────────────────────────────────────────── */
+.song-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.song-checkbox-placeholder {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Playlist Toolbar ──────────────────────────────────────────── */
+.playlist-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.toolbar-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.toolbar-select-all input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.selected-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.btn-add-playlist {
+  font-size: 13px;
+  padding: 6px 16px;
+  white-space: nowrap;
+}
+
 .song-item.matched .song-name {
   color: var(--text-primary);
 }

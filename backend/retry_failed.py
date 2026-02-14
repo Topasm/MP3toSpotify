@@ -17,12 +17,12 @@ Examples:
 from __future__ import annotations
 
 import argparse
-import json
-import re
 import sys
 from time import sleep
 
 from encoding_utils import fix_song_line
+from gui_utils import emit
+from search_strategies import parse_song_line, search_with_fallback
 from spotify_client import SpotifyClient
 
 
@@ -50,71 +50,7 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-
-# ── GUI-aware output ───────────────────────────────────────────────────────
-
-def emit(gui_mode: bool, msg: dict) -> None:
-    """Send a JSON message to stdout (for GUI)."""
-    if gui_mode:
-        print(json.dumps(msg, ensure_ascii=False), flush=True)
-
-
-# ── Song parsing & search logic ────────────────────────────────────────────
-
-def parse_song_line(line: str) -> tuple[str, str]:
-    """Parse 'Artist - Title' line into (artist, title)."""
-    line = line.strip()
-    if not line:
-        return "", ""
-
-    if " - " in line:
-        artist, title = line.split(" - ", 1)
-        return " ".join(artist.split()), " ".join(title.split())
-
-    return "", " ".join(line.split())
-
-
-def build_search_queries(artist: str, title: str) -> list[str]:
-    """Generate multiple search query variations for better matching."""
-    queries: list[str] = []
-
-    if artist and title:
-        queries.append(f"track:{title} artist:{artist}")
-    if artist and title:
-        queries.append(f"{artist} {title}")
-    if title:
-        queries.append(f"track:{title}")
-
-    # Remove brackets/parentheses
-    clean_title = re.sub(r"\([^)]*\)", "", title).strip()
-    clean_title = re.sub(r"\[[^\]]*\]", "", clean_title).strip()
-    if clean_title and clean_title != title:
-        if artist:
-            queries.append(f"track:{clean_title} artist:{artist}")
-        queries.append(f"{artist} {clean_title}" if artist else f"track:{clean_title}")
-
-    # Remove feat./ft.
-    if re.search(r"feat\.?|ft\.?", title, re.IGNORECASE):
-        no_feat = re.sub(
-            r"[\(\[]?\s*(?:feat|ft)\.?\s*[^\)\]]*[\)\]]?", "",
-            title, flags=re.IGNORECASE,
-        ).strip()
-        if no_feat and no_feat != title and no_feat != clean_title:
-            if artist:
-                queries.append(f"track:{no_feat} artist:{artist}")
-            queries.append(f"{artist} {no_feat}" if artist else f"track:{no_feat}")
-
-    return queries
-
-
-def search_with_fallback(client: SpotifyClient, artist: str, title: str) -> str | None:
-    """Try multiple search queries until a match is found."""
-    for query in build_search_queries(artist, title):
-        track_id = client.search(query)
-        if track_id:
-            return track_id
-        sleep(0.05)
-    return None
+# ── Helpers ────────────────────────────────────────────────────────────────
 
 
 def read_failed_songs(filepath: str) -> list[str]:
@@ -158,6 +94,7 @@ def main() -> None:
         return
 
     if gui:
+        emit(True, {"type": "total", "count": total})
         emit(True, {"type": "progress", "text": f"Loaded {total} songs", "total": total, "current": 0})
     else:
         print(f"\n{'='*50}")
@@ -166,10 +103,14 @@ def main() -> None:
         print(f"{'='*50}\n")
 
     track_ids: list[str] = []
+    seen_ids: set[str] = set()          # deduplication
     still_failed: list[str] = []
 
     for i, song_line in enumerate(songs, 1):
         artist, title = parse_song_line(song_line)
+
+        if gui:
+            emit(True, {"type": "progress", "text": song_line, "current": i, "total": total})
 
         if not title:
             still_failed.append(song_line)
@@ -182,9 +123,11 @@ def main() -> None:
         track_id = search_with_fallback(client, artist, title)
 
         if track_id:
-            track_ids.append(track_id)
+            if track_id not in seen_ids:
+                seen_ids.add(track_id)
+                track_ids.append(track_id)
             if gui:
-                emit(True, {"type": "match", "name": song_line})
+                emit(True, {"type": "match", "name": song_line, "trackId": track_id})
             else:
                 print(f"  [{i:>4}/{total}] {song_line[:65].ljust(65)} ✓ FOUND")
         else:
@@ -218,17 +161,19 @@ def main() -> None:
         if not gui:
             print(f"Still-failed songs written to '{args.output}'.")
 
-    # Add to playlist
+    # In GUI mode, don't auto-add — let the user select via checkboxes
+    if gui:
+        return
+
+    # CLI mode: add all matched tracks to playlist
     if track_ids:
         playlist_id = client.ensure_playlist(args.playlist_id, name="MP3toSpotify - Retry")
         added = client.add_tracks(playlist_id, track_ids)
-        if not gui:
-            print(f"\nSuccessfully added {added} songs to the playlist!")
-    elif not gui:
+        print(f"\nSuccessfully added {added} songs to the playlist!")
+    else:
         print("No songs found to add.")
 
-    if not gui:
-        print("\nDone!")
+    print("\nDone!")
 
 
 if __name__ == "__main__":

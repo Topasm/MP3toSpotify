@@ -79,6 +79,11 @@ ipcMain.handle("start-youtube", async (_event, options) => {
   return runPython("youtube_import.py", options);
 });
 
+// Add selected tracks to Spotify playlist
+ipcMain.handle("add-tracks", async (_event, options) => {
+  return runPython("addtracks", options);
+});
+
 // Cancel running process
 ipcMain.handle("cancel-process", async () => {
   killPython();
@@ -112,18 +117,22 @@ function runPython(script, options) {
       "main.py": "scan",
       "retry_failed.py": "retry",
       "youtube_import.py": "youtube",
+      "addtracks": "addtracks",
     };
     const command = commandMap[script] || "scan";
     const exePath = getExePath();
-    const args = [command, "--gui"];
 
-    // Build argument list from options
+    // Build argument list: command username --gui [options]
+    const args = [command];
     if (options.username) args.push(options.username);
+    args.push("--gui");
     if (options.musicDir) args.push("-d", options.musicDir);
     if (options.playlistId) args.push("-p", options.playlistId);
+    if (options.playlistName) args.push("-n", options.playlistName);
     if (options.inputFile) args.push("-i", options.inputFile);
     if (options.outputFile) args.push("-o", options.outputFile);
     if (options.youtubeUrl) args.push("-u", options.youtubeUrl);
+    if (options.trackIds) args.push("--tracks", options.trackIds);
 
     // Set environment variables for Spotify credentials
     const env = { ...process.env };

@@ -60,6 +60,8 @@ jobs:
             --hidden-import youtube_import \
             --hidden-import spotify_client \
             --hidden-import encoding_utils \
+            --hidden-import gui_utils \
+            --hidden-import search_strategies \
             --hidden-import spotipy \
             --hidden-import tinytag \
             --hidden-import chardet \

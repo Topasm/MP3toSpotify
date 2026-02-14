@@ -16,12 +16,13 @@ Examples:
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 from time import sleep
 
 from encoding_utils import fix_mojibake
+from gui_utils import emit
+from search_strategies import search_with_fallback
 from spotify_client import SpotifyClient
 
 
@@ -49,15 +50,6 @@ def parse_args() -> argparse.Namespace:
         help="Output JSON lines for Electron GUI (internal use)",
     )
     return parser.parse_args()
-
-
-# ── GUI-aware output ───────────────────────────────────────────────────────
-
-def emit(gui_mode: bool, msg: dict) -> None:
-    """Send a JSON message to stdout (for GUI)."""
-    if gui_mode:
-        print(json.dumps(msg, ensure_ascii=False), flush=True)
-
 
 # ── YouTube Extraction ─────────────────────────────────────────────────────
 
@@ -122,6 +114,31 @@ def extract_playlist(url: str, gui: bool = False) -> list[dict[str, str]]:
 
 # ── Title Cleaning ─────────────────────────────────────────────────────────
 
+# Single compiled regex combining all YouTube noise patterns
+_NOISE_RE = re.compile(
+    r"""
+    \(Official\s*(?:Music\s*)?Video\)  |
+    \(Official\s*Audio\)               |
+    \(Official\s*Lyric\s*Video\)       |
+    \(Lyrics?\)                        |
+    \(Visuali[sz]er\)                  |
+    \(Audio\)                          |
+    \(MV\)                             |
+    \[MV\]                             |
+    \[Official\s*(?:Music\s*)?Video\]  |
+    \[Official\s*Audio\]               |
+    \[Lyrics?\]                        |
+    \bM/?V\b                           |
+    \bHD\b                             |
+    \b4K\b                             |
+    \blyrics?\b                        |
+    \bofficial\s*(?:music\s*)?video\b  |
+    \bofficial\s*audio\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
 def clean_youtube_title(title: str) -> tuple[str, str]:
     """
     Parse a YouTube video title into (artist, song_title).
@@ -135,28 +152,8 @@ def clean_youtube_title(title: str) -> tuple[str, str]:
     """
     title = fix_mojibake(title)
 
-    # Remove common YouTube noise
-    noise_patterns = [
-        r"\(Official\s*(Music\s*)?Video\)",
-        r"\(Official\s*Audio\)",
-        r"\(Official\s*Lyric\s*Video\)",
-        r"\(Lyrics?\)",
-        r"\(Visuali[sz]er\)",
-        r"\(Audio\)",
-        r"\(MV\)",
-        r"\[MV\]",
-        r"\[Official\s*(Music\s*)?Video\]",
-        r"\[Official\s*Audio\]",
-        r"\[Lyrics?\]",
-        r"\bM/?V\b",
-        r"\bHD\b",
-        r"\b4K\b",
-        r"\blyrics?\b",
-        r"\bofficial\s*(music\s*)?video\b",
-        r"\bofficial\s*audio\b",
-    ]
-    for pattern in noise_patterns:
-        title = re.sub(pattern, "", title, flags=re.IGNORECASE)
+    # Remove all YouTube noise in one pass
+    title = _NOISE_RE.sub("", title)
 
     # Clean extra whitespace
     title = re.sub(r"\s+", " ", title).strip()
@@ -175,56 +172,6 @@ def clean_youtube_title(title: str) -> tuple[str, str]:
                 return artist, song
 
     return "", title
-
-
-def build_youtube_search_queries(artist: str, title: str, channel: str = "") -> list[str]:
-    """Generate Spotify search queries from YouTube metadata."""
-    queries: list[str] = []
-
-    if artist and title:
-        queries.append(f"track:{title} artist:{artist}")
-        queries.append(f"{artist} {title}")
-
-    if title:
-        queries.append(f"track:{title}")
-
-    # Use channel name as fallback artist
-    if channel and not artist:
-        clean_channel = re.sub(r"\s*[-–]?\s*(Topic|VEVO|Official).*$", "", channel, flags=re.IGNORECASE).strip()
-        if clean_channel:
-            queries.append(f"track:{title} artist:{clean_channel}")
-            queries.append(f"{clean_channel} {title}")
-
-    # Remove feat./ft. and try again
-    if re.search(r"feat\.?|ft\.?", title, re.IGNORECASE):
-        no_feat = re.sub(
-            r"[\(\[]?\s*(?:feat|ft)\.?\s*[^\)\]]*[\)\]]?", "",
-            title, flags=re.IGNORECASE,
-        ).strip()
-        if no_feat and no_feat != title:
-            if artist:
-                queries.append(f"track:{no_feat} artist:{artist}")
-            queries.append(f"track:{no_feat}")
-
-    # Remove parenthetical content
-    clean_title = re.sub(r"\([^)]*\)", "", title).strip()
-    clean_title = re.sub(r"\[[^\]]*\]", "", clean_title).strip()
-    if clean_title and clean_title != title:
-        if artist:
-            queries.append(f"track:{clean_title} artist:{artist}")
-        queries.append(f"track:{clean_title}")
-
-    return queries
-
-
-def search_youtube_track(client: SpotifyClient, artist: str, title: str, channel: str = "") -> str | None:
-    """Try multiple search queries for a YouTube track."""
-    for query in build_youtube_search_queries(artist, title, channel):
-        track_id = client.search(query)
-        if track_id:
-            return track_id
-        sleep(0.05)
-    return None
 
 
 # ── Main ───────────────────────────────────────────────────────────────────
@@ -259,6 +206,7 @@ def main() -> None:
         return
 
     if gui:
+        emit(True, {"type": "total", "count": total})
         emit(True, {"type": "progress", "text": f"Found {total} videos", "total": total, "current": 0})
     else:
         print(f"\n{'='*55}")
@@ -271,6 +219,8 @@ def main() -> None:
     client = SpotifyClient(args.username)
 
     track_ids: list[str] = []
+    seen_ids: set[str] = set()          # deduplication
+    seen_titles: set[str] = set()       # skip duplicate YouTube entries
     failed: list[str] = []
 
     for i, entry in enumerate(entries, 1):
@@ -279,12 +229,25 @@ def main() -> None:
         artist, song_title = clean_youtube_title(raw_title)
         display_name = f"{artist} - {song_title}" if artist else song_title
 
-        track_id = search_youtube_track(client, artist, song_title, channel)
+        # Skip duplicate YouTube titles
+        title_key = display_name.lower().strip()
+        if title_key in seen_titles:
+            if gui:
+                emit(True, {"type": "progress", "text": f"(dup) {display_name}", "current": i, "total": total})
+            continue
+        seen_titles.add(title_key)
+
+        if gui:
+            emit(True, {"type": "progress", "text": display_name, "current": i, "total": total})
+
+        track_id = search_with_fallback(client, artist, song_title, channel)
 
         if track_id:
-            track_ids.append(track_id)
+            if track_id not in seen_ids:
+                seen_ids.add(track_id)
+                track_ids.append(track_id)
             if gui:
-                emit(True, {"type": "match", "name": display_name})
+                emit(True, {"type": "match", "name": display_name, "trackId": track_id})
             else:
                 print(f"  [{i:>4}/{total}] {display_name[:55].ljust(55)} ✓ MATCHED")
         else:
@@ -294,17 +257,17 @@ def main() -> None:
             else:
                 print(f"  [{i:>4}/{total}] {display_name[:55].ljust(55)} ✗ FAILED")
 
-    # Add to playlist
+    # Summary
     matched_count = len(track_ids)
     failed_count = len(failed)
 
-    if track_ids:
-        playlist_id = client.ensure_playlist(
-            args.playlist_id, "YouTube Import — MP3toSpotify"
-        )
-        client.add_tracks(playlist_id, track_ids)
-        if not gui:
-            print(f"\n  ✓ Added {matched_count} tracks to playlist: {playlist_id}")
+    if gui:
+        emit(True, {
+            "type": "summary",
+            "total": total,
+            "matched": matched_count,
+            "failed": failed_count,
+        })
 
     # Save failed
     if failed:
@@ -314,16 +277,20 @@ def main() -> None:
         if not gui:
             print(f"  ✗ {failed_count} unmatched songs saved to '{args.output}'")
 
-    # Summary
+    # In GUI mode, don't auto-add — let the user select via checkboxes
     if gui:
-        emit(True, {
-            "type": "summary",
-            "total": total,
-            "matched": matched_count,
-            "failed": failed_count,
-        })
-    else:
-        rate = (matched_count / total * 100) if total > 0 else 0
+        return
+
+    # CLI mode: add all matched tracks to playlist
+    if track_ids:
+        playlist_id = client.ensure_playlist(
+            args.playlist_id, "YouTube Import — MP3toSpotify"
+        )
+        client.add_tracks(playlist_id, track_ids)
+        print(f"\n  ✓ Added {matched_count} tracks to playlist: {playlist_id}")
+
+    if total > 0:
+        rate = (matched_count / total * 100)
         print(f"\n{'='*55}")
         print(f"  Results: {matched_count}/{total} matched ({rate:.1f}%)")
         print(f"{'='*55}\n")

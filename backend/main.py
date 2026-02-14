@@ -25,6 +25,7 @@ from typing import Generator
 from tinytag import TinyTag
 
 from encoding_utils import fix_mojibake
+from gui_utils import emit
 from spotify_client import SpotifyClient
 
 
@@ -52,13 +53,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-# ── GUI-aware output helpers ───────────────────────────────────────────────
-
-def emit(gui_mode: bool, msg: dict) -> None:
-    """Send a JSON message to stdout (for GUI) or print human-readable text."""
-    if gui_mode:
-        print(json.dumps(msg, ensure_ascii=False), flush=True)
-
+# ── Helpers ────────────────────────────────────────────────────────────────
 
 def get_music_dir(music_dir: str, gui_mode: bool) -> str:
     """Validate or prompt for the music directory path."""
@@ -81,7 +76,7 @@ def get_music_dir(music_dir: str, gui_mode: bool) -> str:
         print("The provided path is not valid. Please try again.\n(Press Ctrl+C to exit)")
 
 
-def scan_music_files(music_dir: str) -> Generator[tuple[str, str], None, None]:
+def scan_music_files(music_dir: str, gui_mode: bool = False) -> Generator[tuple[str, str], None, None]:
     """Recursively scan audio files and yield (query, display_name) pairs.
 
     Uses TinyTag to read metadata. Applies mojibake recovery to handle
@@ -89,6 +84,7 @@ def scan_music_files(music_dir: str) -> Generator[tuple[str, str], None, None]:
 
     Args:
         music_dir: Root directory to scan.
+        gui_mode: Whether running inside the Electron GUI.
 
     Yields:
         Tuples of (spotify_query, "artist - title") for each audio file.
@@ -112,17 +108,35 @@ def scan_music_files(music_dir: str) -> Generator[tuple[str, str], None, None]:
             yield query, display
 
     if files_read == 0:
-        print(
-            "\nNo audio files found at the specified location.\n"
+        msg = (
+            "No audio files found at the specified location. "
             "Please check the path to the directory is correct."
         )
+        if gui_mode:
+            emit(True, {"type": "error", "text": msg})
+        else:
+            print(f"\n{msg}")
         sys.exit(1)
 
-    print(
-        f"\nRead {files_read} audio files.\n"
-        "Note: Some files may have been skipped due to unsupported formats "
-        "or corrupted metadata.\n"
-    )
+    if not gui_mode:
+        print(
+            f"\nRead {files_read} audio files.\n"
+            "Note: Some files may have been skipped due to unsupported formats "
+            "or corrupted metadata.\n"
+        )
+
+
+def _count_audio_files(music_dir: str) -> int:
+    """Count audio files without reading metadata (fast pre-scan)."""
+    count = 0
+    for _, _, files in os.walk(music_dir):
+        for f in files:
+            if f.lower().endswith(
+                (".mp3", ".flac", ".ogg", ".opus", ".wma", ".wav",
+                 ".m4a", ".aac", ".aiff", ".dsf", ".wv")
+            ):
+                count += 1
+    return count
 
 
 def main() -> None:
@@ -140,21 +154,34 @@ def main() -> None:
     client = SpotifyClient(args.username)
     music_dir = get_music_dir(args.music_dir, gui)
 
+    # Pre-count files for accurate progress bar
+    total_count = _count_audio_files(music_dir)
+    if gui and total_count > 0:
+        emit(True, {"type": "total", "count": total_count})
+
     track_ids: list[str] = []
+    seen_ids: set[str] = set()          # deduplication
     searched = 0
 
     with open(args.output, "w", encoding="utf-8") as failed_file:
-        for query, display in scan_music_files(music_dir):
+        for query, display in scan_music_files(music_dir, gui_mode=gui):
             searched += 1
 
             if gui:
-                emit(True, {"type": "progress", "text": display, "current": searched})
+                emit(True, {
+                    "type": "progress",
+                    "text": display,
+                    "current": searched,
+                    "total": total_count,
+                })
 
             track_id = client.search(query)
             if track_id:
-                track_ids.append(track_id)
+                if track_id not in seen_ids:
+                    seen_ids.add(track_id)
+                    track_ids.append(track_id)
                 if gui:
-                    emit(True, {"type": "match", "name": display})
+                    emit(True, {"type": "match", "name": display, "trackId": track_id})
                 else:
                     print(f"  {searched}: {display} ✓")
             else:
@@ -184,20 +211,22 @@ def main() -> None:
         print("\nNo songs were searched.")
         return
 
-    # Add to playlist
+    # In GUI mode, don't auto-add — let the user select via checkboxes
+    if gui:
+        return
+
+    # CLI mode: add all matched tracks to playlist
     if track_ids:
         playlist_id = client.ensure_playlist(args.playlist_id)
         added = client.add_tracks(playlist_id, track_ids)
-        if not gui:
-            print(f"Successfully added {added} songs to the playlist.")
+        print(f"Successfully added {added} songs to the playlist.")
 
-    if not gui:
-        if searched > matched:
-            print(
-                f"\n{searched - matched} unmatched songs written to '{args.output}'.\n"
-                "Use retry_failed.py to retry with advanced search strategies."
-            )
-        print("\nDone! Thank you for using MP3toSpotify.")
+    if searched > matched:
+        print(
+            f"\n{searched - matched} unmatched songs written to '{args.output}'.\n"
+            "Use retry_failed.py to retry with advanced search strategies."
+        )
+    print("\nDone! Thank you for using MP3toSpotify.")
 
 
 if __name__ == "__main__":

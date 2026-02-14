@@ -27,6 +27,7 @@ env/
 # Generated output files
 failed_matches.txt
 still_failed.txt
+yt_failed_matches.txt
 Failed matches*.txt
 
 # Node.js / Electron

@@ -179,6 +179,17 @@
             <button class="filter-btn" data-filter="failed">✗ Failed</button>
           </div>
         </div>
+        <!-- Playlist Toolbar (shown after scan completes) -->
+        <div id="playlist-toolbar" class="playlist-toolbar" style="display:none;">
+          <label class="checkbox-label toolbar-select-all">
+            <input type="checkbox" id="select-all-checkbox" checked>
+            <span>Select All</span>
+          </label>
+          <span id="selected-count" class="selected-count">0 selected</span>
+          <button id="btn-add-to-playlist" class="btn btn-primary btn-add-playlist">
+            <span class="btn-icon">➕</span> Add Selected to Playlist
+          </button>
+        </div>
         <div id="song-list" class="song-list"></div>
       </div>
     </section>

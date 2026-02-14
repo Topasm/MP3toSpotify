@@ -7,9 +7,11 @@ const state = {
   matched: 0,
   failed: 0,
   total: 0,
-  songs: [],       // { name, status: 'matched'|'failed' }
+  // Each song: { name, status: 'matched'|'failed', trackId?, checked }
+  songs: [],
+  seenNames: new Set(),   // dedup by display name
   filter: "all",
-  cleanup: null,    // Listener cleanup function
+  cleanup: null,           // Listener cleanup function
 };
 
 // ── DOM Elements ──────────────────────────────────────────────────────────
@@ -63,6 +65,12 @@ const els = {
   songList: $("#song-list"),
   filterButtons: $$(".filter-btn"),
 
+  // Playlist toolbar
+  playlistToolbar: $("#playlist-toolbar"),
+  selectAllCheckbox: $("#select-all-checkbox"),
+  selectedCount: $("#selected-count"),
+  btnAddToPlaylist: $("#btn-add-to-playlist"),
+
   // External link
   linkSpotifyDev: $("#link-spotify-dev"),
 };
@@ -106,8 +114,10 @@ function resetStats() {
   state.failed = 0;
   state.total = 0;
   state.songs = [];
+  state.seenNames.clear();
   updateStats();
   els.songList.innerHTML = "";
+  els.playlistToolbar.style.display = "none";
 }
 
 function updateStats() {
@@ -123,20 +133,42 @@ function updateStats() {
   els.progressBar.style.width = `${pct}%`;
 }
 
-function addSongToList(name, status) {
-  const song = { name, status };
+function updateSelectedCount() {
+  const matched = state.songs.filter((s) => s.status === "matched");
+  const checked = matched.filter((s) => s.checked);
+  els.selectedCount.textContent = `${checked.length} / ${matched.length} selected`;
+  els.selectAllCheckbox.checked = matched.length > 0 && checked.length === matched.length;
+  els.selectAllCheckbox.indeterminate =
+    checked.length > 0 && checked.length < matched.length;
+}
+
+function addSongToList(name, status, trackId = null) {
+  // Dedup by display name (case-insensitive)
+  const key = name.toLowerCase().trim();
+  if (state.seenNames.has(key)) return;
+  state.seenNames.add(key);
+
+  const song = { name, status, trackId, checked: status === "matched" };
   state.songs.push(song);
 
   if (state.filter === "all" || state.filter === status) {
-    appendSongElement(song, state.songs.length);
+    appendSongElement(song, state.songs.length - 1);
   }
 }
 
 function appendSongElement(song, index) {
   const div = document.createElement("div");
   div.className = `song-item ${song.status}`;
+  div.dataset.index = index;
+
+  const checkbox =
+    song.status === "matched"
+      ? `<input type="checkbox" class="song-checkbox" data-index="${index}" ${song.checked ? "checked" : ""}>`
+      : `<span class="song-checkbox-placeholder"></span>`;
+
   div.innerHTML = `
-    <span class="song-index">${index}</span>
+    ${checkbox}
+    <span class="song-index">${index + 1}</span>
     <span class="song-status">${song.status === "matched" ? "✓" : "✗"}</span>
     <span class="song-name" title="${escapeHtml(song.name)}">${escapeHtml(song.name)}</span>
   `;
@@ -144,15 +176,19 @@ function appendSongElement(song, index) {
   els.songList.scrollTop = els.songList.scrollHeight;
 }
 
+function rerenderSongList() {
+  els.songList.innerHTML = "";
+  state.songs.forEach((song, i) => {
+    if (state.filter === "all" || state.filter === song.status) {
+      appendSongElement(song, i);
+    }
+  });
+}
+
 function filterSongs(filter) {
   state.filter = filter;
   els.filterButtons.forEach((b) => b.classList.toggle("active", b.dataset.filter === filter));
-  els.songList.innerHTML = "";
-  state.songs.forEach((song, i) => {
-    if (filter === "all" || filter === song.status) {
-      appendSongElement(song, i + 1);
-    }
-  });
+  rerenderSongList();
 }
 
 function escapeHtml(str) {
@@ -175,6 +211,14 @@ function setRunning(running) {
   els.resultsSection.style.display = "";
 }
 
+function showPlaylistToolbar() {
+  const hasMatched = state.songs.some((s) => s.status === "matched" && s.trackId);
+  if (hasMatched) {
+    els.playlistToolbar.style.display = "";
+    updateSelectedCount();
+  }
+}
+
 function validateCredentials() {
   const creds = getCredentials();
   if (!creds.clientId || !creds.clientSecret || !creds.username) {
@@ -188,22 +232,27 @@ function validateCredentials() {
 // ── Python Message Handler ────────────────────────────────────────────────
 function handlePythonMessage(msg) {
   switch (msg.type) {
+    case "total":
+      // Pre-scan total count for accurate progress bar
+      state.total = msg.count || 0;
+      updateStats();
+      break;
+
     case "progress":
+      // Update progress bar without incrementing match/fail counts
       state.scanned = msg.current || state.scanned;
-      state.total = msg.total || state.total;
+      if (msg.total) state.total = msg.total;
       els.progressLabel.textContent = msg.text || "Processing...";
       updateStats();
       break;
 
     case "match":
-      state.scanned++;
       state.matched++;
-      addSongToList(msg.name, "matched");
+      addSongToList(msg.name, "matched", msg.trackId || null);
       updateStats();
       break;
 
     case "no_match":
-      state.scanned++;
       state.failed++;
       addSongToList(msg.name, "failed");
       updateStats();
@@ -213,15 +262,20 @@ function handlePythonMessage(msg) {
       state.total = msg.total || state.scanned;
       state.matched = msg.matched || state.matched;
       state.failed = msg.failed || state.failed;
-      state.scanned = state.total;
+      state.scanned = state.matched + state.failed;
       updateStats();
       els.progressLabel.textContent = "Complete!";
+      showPlaylistToolbar();
       break;
 
     case "done":
       setRunning(false);
-      els.progressLabel.textContent =
-        msg.code === 0 ? "✓ Complete!" : `Process exited with code ${msg.code}`;
+      if (msg.code === 0) {
+        els.progressLabel.textContent = "✓ Complete!";
+        showPlaylistToolbar();
+      } else {
+        els.progressLabel.textContent = `Process exited with code ${msg.code}`;
+      }
       break;
 
     case "error":
@@ -251,7 +305,6 @@ els.saveSettings.addEventListener("click", saveSettings);
 // External link (open in default browser)
 els.linkSpotifyDev.addEventListener("click", (e) => {
   e.preventDefault();
-  // In Electron, we use shell.openExternal via a simple workaround
   window.open("https://developer.spotify.com/dashboard", "_blank");
 });
 
@@ -282,7 +335,6 @@ els.btnStartScan.addEventListener("click", async () => {
   setRunning(true);
   els.progressLabel.textContent = "Scanning music files...";
 
-  // Clean up previous listener
   if (state.cleanup) state.cleanup();
   state.cleanup = window.api.onPythonMessage(handlePythonMessage);
 
@@ -322,7 +374,7 @@ els.btnStartRetry.addEventListener("click", async () => {
   });
 });
 
-// Cancel
+// Cancel buttons
 els.btnCancel.addEventListener("click", async () => {
   await window.api.cancelProcess();
   setRunning(false);
@@ -371,6 +423,74 @@ els.btnCancelYoutube.addEventListener("click", async () => {
 // Filters
 els.filterButtons.forEach((btn) => {
   btn.addEventListener("click", () => filterSongs(btn.dataset.filter));
+});
+
+// ── Checkbox / Playlist Toolbar ───────────────────────────────────────────
+
+// Delegate checkbox clicks from song list
+els.songList.addEventListener("change", (e) => {
+  if (e.target.classList.contains("song-checkbox")) {
+    const idx = parseInt(e.target.dataset.index, 10);
+    if (state.songs[idx]) {
+      state.songs[idx].checked = e.target.checked;
+      updateSelectedCount();
+    }
+  }
+});
+
+// Select All / Deselect All
+els.selectAllCheckbox.addEventListener("change", () => {
+  const val = els.selectAllCheckbox.checked;
+  state.songs.forEach((s) => {
+    if (s.status === "matched") s.checked = val;
+  });
+  rerenderSongList();
+  updateSelectedCount();
+});
+
+// Add Selected to Playlist
+els.btnAddToPlaylist.addEventListener("click", async () => {
+  const creds = validateCredentials();
+  if (!creds) return;
+
+  const selected = state.songs.filter((s) => s.status === "matched" && s.checked && s.trackId);
+  if (selected.length === 0) {
+    alert("No matched songs selected. Check the songs you want to add.");
+    return;
+  }
+
+  const trackIds = selected.map((s) => s.trackId).join(",");
+
+  // Determine which playlist ID field is relevant
+  const playlistId =
+    els.playlistId.value.trim() ||
+    els.retryPlaylistId.value.trim() ||
+    els.ytPlaylistId.value.trim() ||
+    "";
+
+  els.btnAddToPlaylist.disabled = true;
+  els.btnAddToPlaylist.textContent = "Adding...";
+
+  if (state.cleanup) state.cleanup();
+  state.cleanup = window.api.onPythonMessage((msg) => {
+    if (msg.type === "summary") {
+      const added = msg.matched || 0;
+      els.progressLabel.textContent = `✓ Added ${added} tracks to playlist!`;
+    } else if (msg.type === "error") {
+      els.progressLabel.textContent = `Error: ${msg.text}`;
+    } else if (msg.type === "done") {
+      els.btnAddToPlaylist.disabled = false;
+      els.btnAddToPlaylist.innerHTML = '<span class="btn-icon">➕</span> Add Selected to Playlist';
+    }
+  });
+
+  await window.api.addTracks({
+    username: creds.username,
+    clientId: creds.clientId,
+    clientSecret: creds.clientSecret,
+    playlistId,
+    trackIds,
+  });
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────
