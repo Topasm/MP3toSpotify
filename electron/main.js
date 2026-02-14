@@ -131,13 +131,7 @@ function runPython(script, options) {
     // Build argument list: command username --gui [options]
     const args = [command];
     if (options.username) args.push(options.username);
-    
-    // Commands that support --gui but are not long-running scan processes
-    if (command === "listplaylists") {
-      args.push("--gui");
-    } else {
-      args.push("--gui");
-    }
+    args.push("--gui");
 
     if (options.musicDir) args.push("-d", options.musicDir);
     if (options.playlistId) args.push("-p", options.playlistId);
@@ -152,15 +146,12 @@ function runPython(script, options) {
     if (options.clientId) env.SPOTIPY_CLIENT_ID = options.clientId;
     if (options.clientSecret) env.SPOTIPY_CLIENT_SECRET = options.clientSecret;
 
-    // For non-streaming commands (like listplaylists), we might want to capture output differently,
-    // but the current architecture uses event streaming. We can adapt.
-    
+    let resolved = false;
+
     pythonProcess = spawn(exePath, args, {
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });
-
-    let collectedOutput = "";
 
     pythonProcess.stdout.on("data", (data) => {
       const str = data.toString();
@@ -170,8 +161,14 @@ function runPython(script, options) {
           const msg = JSON.parse(line);
           // If it's an array, it's the result of listplaylists
           if (Array.isArray(msg)) {
-             resolve(msg); // Resolve immediately for request/response style calls
-             return; 
+            resolved = true;
+            // Kill and clean up process since we got what we need
+            if (pythonProcess) {
+              pythonProcess.kill("SIGTERM");
+              pythonProcess = null;
+            }
+            resolve(msg);
+            return;
           }
           mainWindow?.webContents.send("python-message", msg);
         } catch {
@@ -195,15 +192,19 @@ function runPython(script, options) {
 
     pythonProcess.on("close", (code) => {
       pythonProcess = null;
-      mainWindow?.webContents.send("python-message", {
-        type: "done",
-        code,
-      });
-      resolve({ success: code === 0 });
+      if (!resolved) {
+        mainWindow?.webContents.send("python-message", {
+          type: "done",
+          code,
+        });
+        resolve({ success: code === 0 });
+      }
     });
 
     pythonProcess.on("error", (err) => {
       pythonProcess = null;
+      if (resolved) return;
+      resolved = true;
       const msg = err.message.includes("ENOENT")
         ? "Backend executable not found. The application may be corrupted — please reinstall."
         : `Failed to start process: ${err.message}`;

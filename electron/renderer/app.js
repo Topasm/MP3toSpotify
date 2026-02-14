@@ -14,6 +14,13 @@ const state = {
   cleanup: null,           // Listener cleanup function
 };
 
+// ── Helpers ───────────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 // ── DOM Elements ──────────────────────────────────────────────────────────
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
