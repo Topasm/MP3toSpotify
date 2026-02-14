@@ -29,6 +29,13 @@ failed_matches.txt
 still_failed.txt
 Failed matches*.txt
 
+# Node.js / Electron
+node_modules/
+dist/
+out/
+*.log
+package-lock.json
+
 # OS files
 .DS_Store
 Thumbs.db

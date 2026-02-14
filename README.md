@@ -1,10 +1,12 @@
 # MP3toSpotify
 
-Match your local music library to Spotify and automatically create playlists.
+Match your local music library to Spotify and automatically create playlists.  
+Available as both a **desktop GUI app** (Electron) and a **CLI tool**.
 
 Scans audio files, reads metadata (title & artist), searches Spotify, and adds matched songs to a playlist. Unmatched songs are saved for retry with advanced search strategies.
 
 **Key Features:**
+- 🖥️ Modern desktop GUI (Electron) with real-time progress
 - 🎵 Recursive local music directory scanning via TinyTag
 - 🔍 Smart Spotify search with multiple fallback strategies
 - 🔄 Retry failed matches with bracket/feat. removal, title-only search
@@ -19,7 +21,8 @@ Scans audio files, reads metadata (title & artist), searches Spotify, and adds m
 
 ### 1. Prerequisites
 
-- Python 3.10+
+- **Python 3.10+**
+- **Node.js 18+** (for GUI only)
 - A [Spotify Developer](https://developer.spotify.com/dashboard) app
 
 ### 2. Create a Spotify App
@@ -34,7 +37,12 @@ Scans audio files, reads metadata (title & artist), searches Spotify, and adds m
 ```bash
 git clone https://github.com/Topasm/MP3toSpotify.git
 cd MP3toSpotify
-pip install -r requirements.txt
+
+# Python dependencies
+pip install -r backend/requirements.txt
+
+# Electron GUI (optional)
+npm install
 ```
 
 ### 4. Configure Credentials
@@ -50,17 +58,31 @@ SPOTIPY_CLIENT_ID=your_client_id_here
 SPOTIPY_CLIENT_SECRET=your_client_secret_here
 ```
 
-### 5. Find Your Spotify Username
-
-Your username can be found at [Spotify Account Overview](https://www.spotify.com/account/overview/) or by copying your **Spotify URI** (right-click your profile → Share → Copy Spotify URI).
+> **Note:** The GUI app has a Settings tab where you can also enter credentials directly.
 
 ---
 
 ## Usage
 
-### Scan & Match Local Files
+### 🖥️ Desktop GUI (Recommended)
 
 ```bash
+npm start
+```
+
+The app provides:
+- **Scan & Match** tab — Select a music folder, scan files, and match to Spotify
+- **Retry Failed** tab — Retry unmatched songs with advanced search strategies
+- **Settings** tab — Enter Spotify credentials (saved locally)
+- **Real-time progress** — See each song matched/failed as it happens
+- **Filter results** — View all, matched only, or failed only
+
+### ⌨️ Command Line
+
+#### Scan & Match Local Files
+
+```bash
+cd backend
 python main.py <username> [options]
 ```
 
@@ -73,19 +95,14 @@ python main.py <username> [options]
 **Examples:**
 
 ```bash
-# Interactive: will prompt for music directory
-python main.py myusername
-
-# Specify directory and playlist
+python main.py myusername -d "C:/Music"
 python main.py myusername -d "C:/Music" -p 37i9dQZF1DXcBWIGoYBM5M
-
-# Custom output file
-python main.py myusername -d "/home/user/music" -o my_failures.txt
 ```
 
-### Retry Failed Matches
+#### Retry Failed Matches
 
 ```bash
+cd backend
 python retry_failed.py <username> [options]
 ```
 
@@ -98,12 +115,13 @@ python retry_failed.py <username> [options]
 **Examples:**
 
 ```bash
-# Retry with default files
 python retry_failed.py myusername
-
-# Custom input/output
 python retry_failed.py myusername -i my_failures.txt -o final_failures.txt
 ```
+
+### Find Your Spotify Username
+
+Your username can be found at [Spotify Account Overview](https://www.spotify.com/account/overview/) or by copying your **Spotify URI** (right-click your profile → Share → Copy Spotify URI).
 
 ---
 
@@ -111,14 +129,23 @@ python retry_failed.py myusername -i my_failures.txt -o final_failures.txt
 
 ```
 MP3toSpotify/
-├── main.py               # Scan local files → Spotify match
-├── retry_failed.py       # Retry with advanced search strategies
-├── spotify_client.py     # SpotifyClient class (API wrapper)
-├── encoding_utils.py     # Automatic mojibake recovery (chardet)
-├── .env.example          # Credential template
-├── requirements.txt
+├── electron/                 # Electron desktop app
+│   ├── main.js               # Main process (window, IPC, subprocess)
+│   ├── preload.js            # Secure IPC bridge
+│   └── renderer/
+│       ├── index.html        # UI layout
+│       ├── styles.css        # Dark theme styling
+│       └── app.js            # Frontend logic
+├── backend/                  # Python core
+│   ├── main.py               # Scan local files → Spotify match
+│   ├── retry_failed.py       # Retry with advanced search strategies
+│   ├── spotify_client.py     # SpotifyClient class (API wrapper)
+│   ├── encoding_utils.py     # Automatic mojibake recovery (chardet)
+│   └── requirements.txt      # Python dependencies
+├── .env.example              # Credential template
+├── package.json              # Electron config & scripts
 ├── pyproject.toml
-├── LICENSE               # GPLv3
+├── LICENSE                   # GPLv3
 └── README.md
 ```
 
@@ -145,10 +172,12 @@ After:  거미 - 친구라도 될 걸 그랬어
 
 ## MP3toSpotify
 
-로컬 음악 파일을 Spotify에서 자동으로 매칭하여 플레이리스트를 생성합니다.
+로컬 음악 파일을 Spotify에서 자동으로 매칭하여 플레이리스트를 생성합니다.  
+**데스크톱 GUI 앱** (Electron)과 **CLI 도구** 두 가지 방식으로 사용할 수 있습니다.
 
 ### 주요 기능
 
+- 🖥️ Electron 기반 데스크톱 GUI — 실시간 진행 상황 표시
 - 🎵 로컬 음악 디렉토리 재귀 스캔 (TinyTag)
 - 🔍 다중 검색 전략으로 Spotify 매칭 (괄호 제거, feat. 제거 등)
 - 🌏 인코딩 깨짐(mojibake) 자동 복구 — `chardet`를 이용해 CP949, Shift-JIS 등 레거시 인코딩 자동 감지
@@ -159,7 +188,12 @@ After:  거미 - 친구라도 될 걸 그랬어
 ```bash
 git clone https://github.com/Topasm/MP3toSpotify.git
 cd MP3toSpotify
-pip install -r requirements.txt
+
+# Python 의존성
+pip install -r backend/requirements.txt
+
+# Electron GUI (선택)
+npm install
 ```
 
 ### 크리덴셜 설정
@@ -179,17 +213,27 @@ SPOTIPY_CLIENT_ID=여기에_클라이언트_ID_입력
 SPOTIPY_CLIENT_SECRET=여기에_클라이언트_시크릿_입력
 ```
 
+> **참고:** GUI 앱의 Settings 탭에서도 직접 입력할 수 있습니다.
+
 ### 사용법
 
-**로컬 파일 스캔 및 매칭:**
+**GUI 앱 실행:**
 
 ```bash
+npm start
+```
+
+**CLI — 로컬 파일 스캔 및 매칭:**
+
+```bash
+cd backend
 python main.py <사용자명> -d "C:/Music"
 ```
 
-**실패 곡 재시도:**
+**CLI — 실패 곡 재시도:**
 
 ```bash
+cd backend
 python retry_failed.py <사용자명>
 ```
 

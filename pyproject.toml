@@ -1,7 +1,7 @@
 [project]
 name = "MP3toSpotify"
-version = "3.0.0"
-description = "Match local music files to Spotify and create playlists automatically"
+version = "3.1.0"
+description = "Match local music files to Spotify and create playlists — GUI & CLI"
 license = "GPL-3.0-only"
 requires-python = ">=3.10"
 dependencies = [

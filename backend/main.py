@@ -10,13 +10,14 @@ Usage:
     python main.py <username> [options]
 
 Examples:
-    python main.py myusername
+    python main.py myusername -d "C:/Music"
     python main.py myusername -d "C:/Music" -p 37i9dQZF1DXcBWIGoYBM5M
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from typing import Generator
@@ -33,7 +34,7 @@ def parse_args() -> argparse.Namespace:
         description="Match local music files to Spotify and add to a playlist.",
         epilog="Set SPOTIPY_CLIENT_ID and SPOTIPY_CLIENT_SECRET env vars first.",
     )
-    parser.add_argument("username", help="Spotify username or user URI")
+    parser.add_argument("username", nargs="?", default="", help="Spotify username or user URI")
     parser.add_argument(
         "-p", "--playlist-id", default="", help="Existing Spotify playlist ID (optional)"
     )
@@ -41,26 +42,34 @@ def parse_args() -> argparse.Namespace:
         "-d", "--music-dir", default="", help="Path to local music directory"
     )
     parser.add_argument(
-        "-o",
-        "--output",
-        default="failed_matches.txt",
+        "-o", "--output", default="failed_matches.txt",
         help="Output file for unmatched songs (default: failed_matches.txt)",
+    )
+    parser.add_argument(
+        "--gui", action="store_true",
+        help="Output JSON lines for Electron GUI (internal use)",
     )
     return parser.parse_args()
 
 
-def get_music_dir(music_dir: str) -> str:
-    """Validate or prompt for the music directory path.
+# ── GUI-aware output helpers ───────────────────────────────────────────────
 
-    Args:
-        music_dir: Path from CLI args. If empty, prompts the user.
+def emit(gui_mode: bool, msg: dict) -> None:
+    """Send a JSON message to stdout (for GUI) or print human-readable text."""
+    if gui_mode:
+        print(json.dumps(msg, ensure_ascii=False), flush=True)
 
-    Returns:
-        A validated directory path.
-    """
+
+def get_music_dir(music_dir: str, gui_mode: bool) -> str:
+    """Validate or prompt for the music directory path."""
     if music_dir and os.path.isdir(music_dir):
-        print(f"Found valid path: {music_dir}")
+        if not gui_mode:
+            print(f"Found valid path: {music_dir}")
         return music_dir
+
+    if gui_mode:
+        emit(True, {"type": "error", "text": f"Invalid music directory: {music_dir}"})
+        sys.exit(1)
 
     if music_dir:
         print(f"Warning: '{music_dir}' is not a valid directory.")
@@ -69,15 +78,10 @@ def get_music_dir(music_dir: str) -> str:
         music_dir = input("Please paste the path to your music directory: ").strip()
         if os.path.isdir(music_dir):
             return music_dir
-        print(
-            "The provided path is not valid. Please try again.\n"
-            "(Press Ctrl+C to exit)"
-        )
+        print("The provided path is not valid. Please try again.\n(Press Ctrl+C to exit)")
 
 
-def scan_music_files(
-    music_dir: str,
-) -> Generator[tuple[str, str], None, None]:
+def scan_music_files(music_dir: str) -> Generator[tuple[str, str], None, None]:
     """Recursively scan audio files and yield (query, display_name) pairs.
 
     Uses TinyTag to read metadata. Applies mojibake recovery to handle
@@ -97,7 +101,6 @@ def scan_music_files(
             try:
                 tag = TinyTag.get(filepath)
             except Exception:
-                # Skip files TinyTag can't parse (non-audio, corrupted, etc.)
                 continue
 
             title = fix_mojibake(tag.title or "") or os.path.splitext(file)[0]
@@ -125,8 +128,17 @@ def scan_music_files(
 def main() -> None:
     """Main entry point."""
     args = parse_args()
+    gui = args.gui
+
+    if not args.username:
+        if gui:
+            emit(True, {"type": "error", "text": "Username is required."})
+            sys.exit(1)
+        print("Error: username is required.\nUsage: python main.py <username> -d <music_dir>")
+        sys.exit(1)
+
     client = SpotifyClient(args.username)
-    music_dir = get_music_dir(args.music_dir)
+    music_dir = get_music_dir(args.music_dir, gui)
 
     track_ids: list[str] = []
     searched = 0
@@ -134,19 +146,34 @@ def main() -> None:
     with open(args.output, "w", encoding="utf-8") as failed_file:
         for query, display in scan_music_files(music_dir):
             searched += 1
-            print(f"  {searched}: {display}", end=" ")
+
+            if gui:
+                emit(True, {"type": "progress", "text": display, "current": searched})
 
             track_id = client.search(query)
             if track_id:
-                print("✓")
                 track_ids.append(track_id)
+                if gui:
+                    emit(True, {"type": "match", "name": display})
+                else:
+                    print(f"  {searched}: {display} ✓")
             else:
-                print("✗ NO MATCH")
                 failed_file.write(f"{display}\n")
+                if gui:
+                    emit(True, {"type": "no_match", "name": display})
+                else:
+                    print(f"  {searched}: {display} ✗ NO MATCH")
 
     # Summary
     matched = len(track_ids)
-    if searched > 0:
+    if gui:
+        emit(True, {
+            "type": "summary",
+            "total": searched,
+            "matched": matched,
+            "failed": searched - matched,
+        })
+    elif searched > 0:
         rate = matched / searched * 100
         print(f"\n{'='*50}")
         print(f"  Total scanned : {searched}")
@@ -161,17 +188,16 @@ def main() -> None:
     if track_ids:
         playlist_id = client.ensure_playlist(args.playlist_id)
         added = client.add_tracks(playlist_id, track_ids)
-        print(f"Successfully added {added} songs to the playlist.")
-    else:
-        print("No matched songs to add.")
+        if not gui:
+            print(f"Successfully added {added} songs to the playlist.")
 
-    if searched > matched:
-        print(
-            f"\n{searched - matched} unmatched songs written to '{args.output}'.\n"
-            "Use retry_failed.py to retry with advanced search strategies."
-        )
-
-    print("\nDone! Thank you for using MP3toSpotify.")
+    if not gui:
+        if searched > matched:
+            print(
+                f"\n{searched - matched} unmatched songs written to '{args.output}'.\n"
+                "Use retry_failed.py to retry with advanced search strategies."
+            )
+        print("\nDone! Thank you for using MP3toSpotify.")
 
 
 if __name__ == "__main__":

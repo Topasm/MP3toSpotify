@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self';">
+  <title>MP3toSpotify</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-brand">
+        <span class="logo">🎵</span>
+        <h1>MP3toSpotify</h1>
+      </div>
+      <div class="header-tabs">
+        <button class="tab active" data-tab="scan">Scan &amp; Match</button>
+        <button class="tab" data-tab="retry">Retry Failed</button>
+        <button class="tab" data-tab="settings">Settings</button>
+      </div>
+    </header>
+
+    <!-- Settings Panel (Spotify Credentials) -->
+    <section id="settings-panel" class="panel" style="display:none;">
+      <div class="card">
+        <h2>🔑 Spotify Credentials</h2>
+        <p class="hint">
+          Get these from your
+          <a href="#" id="link-spotify-dev">Spotify Developer Dashboard</a>.
+          Set Redirect URI to <code>http://127.0.0.1:8080</code>.
+        </p>
+        <div class="form-group">
+          <label for="client-id">Client ID</label>
+          <input type="text" id="client-id" placeholder="Enter your Spotify Client ID" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="client-secret">Client Secret</label>
+          <input type="password" id="client-secret" placeholder="Enter your Spotify Client Secret" spellcheck="false">
+        </div>
+        <div class="form-group">
+          <label for="username">Spotify Username / URI</label>
+          <input type="text" id="username" placeholder="Enter your Spotify username" spellcheck="false">
+        </div>
+        <div class="form-actions">
+          <button id="save-settings" class="btn btn-primary">Save Settings</button>
+          <span id="settings-status" class="status-text"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scan Panel -->
+    <section id="scan-panel" class="panel">
+      <div class="card">
+        <h2>📂 Music Directory</h2>
+        <div class="input-row">
+          <input type="text" id="music-dir" placeholder="Select your music folder..." readonly>
+          <button id="btn-select-folder" class="btn btn-secondary">Browse</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🎧 Playlist</h2>
+        <div class="form-group">
+          <label for="playlist-id">Playlist ID <span class="optional">(optional — leave empty to create new)</span></label>
+          <input type="text" id="playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="btn-start-scan" class="btn btn-primary btn-lg">
+          <span class="btn-icon">▶</span> Start Scanning
+        </button>
+        <button id="btn-cancel" class="btn btn-danger btn-lg" style="display:none;">
+          <span class="btn-icon">■</span> Cancel
+        </button>
+      </div>
+    </section>
+
+    <!-- Retry Panel -->
+    <section id="retry-panel" class="panel" style="display:none;">
+      <div class="card">
+        <h2>📄 Failed Matches File</h2>
+        <div class="input-row">
+          <input type="text" id="retry-input" placeholder="Select failed matches file..." readonly>
+          <button id="btn-select-file" class="btn btn-secondary">Browse</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🎧 Playlist</h2>
+        <div class="form-group">
+          <label for="retry-playlist-id">Playlist ID <span class="optional">(optional)</span></label>
+          <input type="text" id="retry-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="btn-start-retry" class="btn btn-primary btn-lg">
+          <span class="btn-icon">🔄</span> Start Retry
+        </button>
+        <button id="btn-cancel-retry" class="btn btn-danger btn-lg" style="display:none;">
+          <span class="btn-icon">■</span> Cancel
+        </button>
+      </div>
+    </section>
+
+    <!-- Progress & Results (shared across tabs) -->
+    <section id="results-section" class="results-section" style="display:none;">
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-header">
+          <span id="progress-label">Scanning...</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-scanned">0</span>
+          <span class="stat-label">Scanned</span>
+        </div>
+        <div class="stat-card stat-success">
+          <span class="stat-value" id="stat-matched">0</span>
+          <span class="stat-label">Matched</span>
+        </div>
+        <div class="stat-card stat-fail">
+          <span class="stat-value" id="stat-failed">0</span>
+          <span class="stat-label">Failed</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-rate">0%</span>
+          <span class="stat-label">Success Rate</span>
+        </div>
+      </div>
+
+      <!-- Song List -->
+      <div class="song-list-container">
+        <div class="song-list-header">
+          <h3>Results</h3>
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="matched">✓ Matched</button>
+            <button class="filter-btn" data-filter="failed">✗ Failed</button>
+          </div>
+        </div>
+        <div id="song-list" class="song-list"></div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

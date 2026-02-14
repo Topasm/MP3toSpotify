@@ -1,0 +1,53 @@
+{
+  "name": "mp3-to-spotify",
+  "version": "3.0.0",
+  "description": "Match local music files to Spotify and create playlists automatically",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "install-python": "pip install -r backend/requirements.txt",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.topasm.mp3tospotify",
+    "productName": "MP3toSpotify",
+    "files": [
+      "electron/**/*",
+      "backend/**/*",
+      "!backend/__pycache__/**",
+      "!backend/*.pyc"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": ["**/*.py", "requirements.txt"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "electron/assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "electron/assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "keywords": ["spotify", "mp3", "music", "playlist", "electron"],
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Topasm/MP3toSpotify.git"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}
