@@ -133,8 +133,8 @@ function switchTab(tabName) {
   Object.entries(panels).forEach(([name, panel]) => {
     panel.style.display = name === tabName ? "block" : "none";
   });
-  // Auto-load playlists when switching to playlist tab
-  if (tabName === "playlist" && els.playlistList.querySelector(".loading-spinner")) {
+  // Auto-load playlists when switching to playlist or import tab
+  if ((tabName === "playlist" || tabName === "import") && els.playlistList.querySelector(".loading-spinner")) {
     loadPlaylists();
   }
 }

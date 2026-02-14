@@ -4,7 +4,7 @@ remove_duplicates.py - Identify and remove duplicate tracks from a playlist.
 
 Safety features:
 - Creates a timestamped backup JSON before removing any tracks.
-- Supports --restore mode to re-add tracks from a backup file.
+- Supports --scan-only mode to preview duplicates without removing.
 - All operations are logged to the console/GUI.
 """
 
@@ -147,55 +147,7 @@ def _remove_duplicates(client: SpotifyClient, playlist_id: str, gui: bool, scan_
     else:
         print(f"Successfully removed {count} duplicates.")
         print(f"Backup file: {backup_path}")
-        print("To restore, run: mp3tospotify remove_duplicates <username> -p <playlist_id> --restore <backup_file>")
 
-
-def _restore_from_backup(client: SpotifyClient, playlist_id: str, backup_file: str, gui: bool):
-    """Restore tracks from a backup file by re-adding them to the playlist."""
-    if not os.path.isfile(backup_file):
-        msg = f"Backup file not found: {backup_file}"
-        if gui:
-            emit(True, {"type": "error", "text": msg})
-        else:
-            print(msg)
-        return
-
-    if gui:
-        emit(True, {"type": "log", "text": "Reading backup file..."})
-    else:
-        print("Reading backup file...")
-
-    with open(backup_file, "r", encoding="utf-8") as f:
-        backup_data = json.load(f)
-
-    tracks = backup_data.get("tracks", [])
-    if not tracks:
-        msg = "Backup file contains no tracks."
-        if gui:
-            emit(True, {"type": "error", "text": msg})
-        else:
-            print(msg)
-        return
-
-    # Extract track IDs (Spotify URIs work too, but IDs are cleaner)
-    track_ids = [t["id"] for t in tracks if t.get("id")]
-    count = len(track_ids)
-
-    if gui:
-        emit(True, {"type": "log", "text": f"Restoring {count} tracks to playlist..."})
-    else:
-        print(f"Restoring {count} tracks from backup (originally from '{backup_data.get('playlist_name', 'unknown')}')...")
-
-    added = client.add_tracks(playlist_id, track_ids)
-
-    if gui:
-        emit(True, {
-            "type": "success",
-            "text": f"Restored {added} tracks to playlist.",
-            "count": added,
-        })
-    else:
-        print(f"Successfully restored {added} tracks.")
 
 
 def main():
@@ -204,16 +156,11 @@ def main():
     parser.add_argument("-p", "--playlist-id", required=True, help="Spotify Playlist ID")
     parser.add_argument("--gui", action="store_true", help="Enable GUI JSON output")
     parser.add_argument("--scan-only", action="store_true", help="Only scan for duplicates, don't remove")
-    parser.add_argument("--restore", metavar="BACKUP_FILE", help="Restore tracks from a backup file instead of removing")
     args = parser.parse_args()
 
     gui = args.gui
     client = SpotifyClient(args.username)
-
-    if args.restore:
-        _restore_from_backup(client, args.playlist_id, args.restore, gui)
-    else:
-        _remove_duplicates(client, args.playlist_id, gui, scan_only=args.scan_only)
+    _remove_duplicates(client, args.playlist_id, gui, scan_only=args.scan_only)
 
 
 if __name__ == "__main__":
