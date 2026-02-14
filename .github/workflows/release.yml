@@ -1,0 +1,101 @@
+# Build & Release — Windows / macOS / Ubuntu
+# Triggered when a version tag (v*) is pushed.
+# Each OS runner: installs Python → PyInstaller backend → Electron app → uploads to GitHub Release.
+
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            pyinstaller_name: mp3tospotify.exe
+            electron_glob: "dist/*.exe"
+          - os: macos-latest
+            platform: mac
+            pyinstaller_name: mp3tospotify
+            electron_glob: "dist/*.dmg"
+          - os: ubuntu-latest
+            platform: linux
+            pyinstaller_name: mp3tospotify
+            electron_glob: "dist/*.AppImage"
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.platform }})
+
+    steps:
+      # ── Checkout ───────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Python Backend ─────────────────────────────────────
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pyinstaller
+
+      - name: Build Python backend with PyInstaller
+        working-directory: backend
+        run: |
+          pyinstaller --onefile --name mp3tospotify \
+            --hidden-import main \
+            --hidden-import retry_failed \
+            --hidden-import spotify_client \
+            --hidden-import encoding_utils \
+            --hidden-import spotipy \
+            --hidden-import tinytag \
+            --hidden-import chardet \
+            cli.py
+
+      - name: Verify PyInstaller output
+        run: |
+          ls backend/dist/
+
+      # ── Make Linux/macOS binary executable ─────────────────
+      - name: Set executable permission
+        if: matrix.platform != 'win'
+        run: chmod +x backend/dist/mp3tospotify
+
+      # ── Node.js & Electron ─────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Electron app
+        run: npx electron-builder --${{ matrix.platform }} --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List dist output
+        run: ls dist/
+
+      # ── Upload to Release ──────────────────────────────────
+      - name: Upload artifacts to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.electron_glob }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

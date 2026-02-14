@@ -18,22 +18,34 @@
     "files": [
       "electron/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "backend/dist/mp3tospotify.exe",
-        "to": "backend/mp3tospotify.exe"
-      }
-    ],
     "win": {
-      "target": "nsis",
-      "icon": "electron/assets/icon.ico"
+      "target": ["nsis", "portable"],
+      "icon": "electron/assets/icon.ico",
+      "extraResources": [
+        {
+          "from": "backend/dist/mp3tospotify.exe",
+          "to": "backend/mp3tospotify.exe"
+        }
+      ]
     },
     "mac": {
       "target": "dmg",
-      "icon": "electron/assets/icon.icns"
+      "icon": "electron/assets/icon.icns",
+      "extraResources": [
+        {
+          "from": "backend/dist/mp3tospotify",
+          "to": "backend/mp3tospotify"
+        }
+      ]
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "extraResources": [
+        {
+          "from": "backend/dist/mp3tospotify",
+          "to": "backend/mp3tospotify"
+        }
+      ]
     }
   },
   "keywords": ["spotify", "mp3", "music", "playlist", "electron"],

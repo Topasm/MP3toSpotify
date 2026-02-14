@@ -84,14 +84,15 @@ ipcMain.handle("cancel-process", async () => {
 
 /**
  * Resolve the path to the bundled mp3tospotify executable.
- * - Packaged (asar): process.resourcesPath/backend/mp3tospotify.exe
- * - Development:      <project>/backend/dist/mp3tospotify.exe
+ * - Packaged: process.resourcesPath/backend/mp3tospotify[.exe]
+ * - Development: <project>/backend/dist/mp3tospotify[.exe]
  */
 function getExePath() {
+  const exeName = process.platform === "win32" ? "mp3tospotify.exe" : "mp3tospotify";
   if (app.isPackaged) {
-    return path.join(process.resourcesPath, "backend", "mp3tospotify.exe");
+    return path.join(process.resourcesPath, "backend", exeName);
   }
-  return path.join(__dirname, "..", "backend", "dist", "mp3tospotify.exe");
+  return path.join(__dirname, "..", "backend", "dist", exeName);
 }
 
 function runPython(script, options) {
