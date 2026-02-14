@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld("api", {
   startYoutube: (options) => ipcRenderer.invoke("start-youtube", options),
   addTracks: (options) => ipcRenderer.invoke("add-tracks", options),
   listPlaylists: (options) => ipcRenderer.invoke("list-playlists", options),
+  search: (options) => ipcRenderer.invoke("search", options),
   cancelProcess: () => ipcRenderer.invoke("cancel-process"),
 
   // Listen for Python subprocess messages

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://i.scdn.co https://*.scdn.co data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self';">
   <title>MP3toSpotify</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -196,6 +196,26 @@
         </div>
       </div>
     </section>
+    <!-- Fix Match Modal -->
+    <div id="fix-match-modal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Fix Match</h2>
+          <span class="close-modal-btn">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="input-row">
+            <input type="text" id="fix-search-input" placeholder="Search Title - Artist..." spellcheck="false" style="flex:1;">
+            <button id="btn-fix-search" class="btn btn-primary" style="margin-left:8px;">Search</button>
+          </div>
+          <div id="fix-results-list" class="playlist-list" style="margin-top:12px; min-height:200px; max-height:400px; overflow-y:auto;">
+            <div class="empty-state" style="padding:20px;">
+              Search for the correct song above.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

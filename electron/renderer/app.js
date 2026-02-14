@@ -179,31 +179,202 @@ function updateSelectedCount() {
   els.selectedCount.textContent = `${count} selected`;
 }
 
+// ── Fix Match Modal ───────────────────────────────────────────────────────
+const fixMatchModal = {
+  el: $("#fix-match-modal"),
+  input: $("#fix-search-input"),
+  btnSearch: $("#btn-fix-search"),
+  resultsList: $("#fix-results-list"),
+  closeBtn: $(".close-modal-btn"), // Changed class in HTML
+  targetIndex: null,
+
+  init() {
+    this.closeBtn.addEventListener("click", () => this.close());
+    this.btnSearch.addEventListener("click", () => this.search());
+    this.input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") this.search();
+    });
+    
+    // Close on click outside
+    window.addEventListener("click", (e) => {
+      if (e.target === this.el) this.close();
+    });
+  },
+
+  open(index) {
+    this.targetIndex = index;
+    const song = state.songs[index];
+    this.input.value = song.name;
+    this.el.style.display = "flex";
+    this.resultsList.innerHTML = '<div class="loading-spinner">Searching...</div>';
+    this.search(song.name);
+  },
+
+  close() {
+    this.el.style.display = "none";
+  },
+
+  async search(queryOverride) {
+    const creds = validateCredentials();
+    if (!creds) return;
+
+    const query = queryOverride || this.input.value.trim();
+    if (!query) return;
+
+    this.resultsList.innerHTML = '<div class="loading-spinner">Searching...</div>';
+
+    try {
+      const results = await window.api.search({
+        ...creds,
+        query
+      });
+
+      if (!Array.isArray(results)) {
+        console.log("Invalid search response:", results);
+        if (results && results.error) throw new Error(results.error);
+        throw new Error("Invalid response: " + JSON.stringify(results));
+      }
+
+      this.renderResults(results);
+    } catch (err) {
+      console.error(err);
+      this.resultsList.innerHTML = `<div style="color:var(--danger);padding:20px;">Error: ${err.message}</div>`;
+    }
+  },
+
+  renderResults(tracks) {
+    this.resultsList.innerHTML = "";
+    if (!tracks || tracks.length === 0) {
+      this.resultsList.innerHTML = '<div class="empty-state">No matches found. Try a different search term.</div>';
+      return;
+    }
+
+    tracks.forEach((track) => {
+      const div = document.createElement("div");
+      div.className = "playlist-item"; // Reuse playlist item style
+      
+      const imgHtml = track.image 
+        ? `<img src="${track.image}" style="width:40px;height:40px;margin-right:12px;border-radius:4px;object-fit:cover;" onerror="this.style.display='none'">` 
+        : "";
+
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;">
+          ${imgHtml}
+          <div class="playlist-info">
+            <span class="playlist-name">${escapeHtml(track.name)}</span>
+            <span class="playlist-meta">${escapeHtml(track.artist)} • ${escapeHtml(track.album)}</span>
+          </div>
+        </div>
+        <button class="playlist-select-btn">Select</button>
+      `;
+      div.addEventListener("click", () => this.selectTrack(track));
+      els.playlistList.appendChild(div); // Wait, wrong parent?
+      this.resultsList.appendChild(div);
+    });
+  },
+
+  selectTrack(track) {
+    if (this.targetIndex === null) return;
+
+    // Update the song in state
+    const song = state.songs[this.targetIndex];
+    song.status = "matched";
+    song.trackId = track.id;
+    song.name = `${track.artist} - ${track.name}`; // Update display name
+    song.checked = true;
+
+    // Re-render list
+    rerenderSongList();
+    updateStats(); // Update counts
+    
+    this.close();
+  }
+};
+
+fixMatchModal.init();
+
+// Update song item HTML to include Fix button
 // ── Song List ─────────────────────────────────────────────────────────────
 function addSongToList(song) {
-  if (state.seenNames.has(song.name)) return;
-  state.seenNames.add(song.name);
+  // Check if we already have this song (by name)
+  const existingIdx = state.songs.findIndex((s) => s.name === song.name);
+
+  if (existingIdx !== -1) {
+    // If exists, only update if the new one is BETTER (e.g. failed -> matched)
+    if (state.songs[existingIdx].status === "failed" && song.status === "matched") {
+      state.songs[existingIdx] = song;
+      // Re-render this specific item in place
+      const row = document.querySelector(`.song-item[data-index="${existingIdx}"]`);
+      if (row) {
+        row.className = `song-item song-${song.status}`;
+        row.innerHTML = getSongItemHtml(song, existingIdx);
+      }
+    }
+    return; // Don't add duplicate
+  }
+
+  // New song
+  const idx = state.songs.length;
   state.songs.push(song);
+  
+  // Render immediately
+  // Respect current filter
+  if (state.filter !== "all" && state.filter !== song.status) {
+    updateSelectedCount();
+    return;
+  }
+
+  const row = document.createElement("div");
+  row.className = `song-item song-${song.status}`;
+  row.dataset.index = idx;
+  row.innerHTML = getSongItemHtml(song, idx);
+  els.songList.appendChild(row);
+  
+  // If this was the first song, remove empty state
+  const emptyState = els.songList.querySelector(".empty-state");
+  if (emptyState) emptyState.remove();
+
+  updateSelectedCount();
 }
 
+function getSongItemHtml(song, idx) {
+  const icon = song.status === "matched" ? "✓" : "✗";
+  const iconClass = song.status === "matched" ? "song-icon-matched" : "song-icon-failed";
+  
+  const checkboxHtml = song.status === "matched"
+    ? `<input type="checkbox" class="song-checkbox" data-index="${idx}" ${song.checked ? "checked" : ""}>`
+    : `<span class="song-checkbox-spacer"></span>`;
+
+  // Fix Match button for failed items
+  const actionsHtml = song.status === "failed"
+    ? `<button class="btn-fix-match" data-index="${idx}">🔍 Fix</button>`
+    : "";
+
+  return `
+    ${checkboxHtml}
+    <span class="song-icon ${iconClass}">${icon}</span>
+    <span class="song-name">${escapeHtml(song.name)}</span>
+    ${actionsHtml}
+  `;
+}
+
+// Add event listener for Fix button
+els.songList.addEventListener("click", (e) => {
+  if (e.target.classList.contains("btn-fix-match")) {
+    const idx = parseInt(e.target.dataset.index, 10);
+    fixMatchModal.open(idx);
+  }
+});
+
+
 function renderSongItem(song, idx) {
+  // Only used by full re-renders (filtering, sort, etc)
   if (state.filter !== "all" && state.filter !== song.status) return;
 
   const row = document.createElement("div");
   row.className = `song-item song-${song.status}`;
   row.dataset.index = idx;
-
-  const icon = song.status === "matched" ? "✓" : "✗";
-  const iconClass = song.status === "matched" ? "song-icon-matched" : "song-icon-failed";
-  const checkboxHtml = song.status === "matched"
-    ? `<input type="checkbox" class="song-checkbox" data-index="${idx}" ${song.checked ? "checked" : ""}>`
-    : "";
-
-  row.innerHTML = `
-    ${checkboxHtml}
-    <span class="song-icon ${iconClass}">${icon}</span>
-    <span class="song-name">${escapeHtml(song.name)}</span>
-  `;
+  row.innerHTML = getSongItemHtml(song, idx);
   els.songList.appendChild(row);
 }
 

@@ -89,18 +89,34 @@ def scan_music_files(music_dir: str, gui_mode: bool = False) -> Generator[tuple[
     Yields:
         Tuples of (spotify_query, "artist - title") for each audio file.
     """
+    supported_exts = (
+        ".mp3", ".flac", ".ogg", ".opus", ".wma", ".wav",
+        ".m4a", ".aac", ".aiff", ".dsf", ".wv"
+    )
     files_read = 0
 
     for subdir, _, files in os.walk(music_dir):
         for file in files:
+            if not file.lower().endswith(supported_exts):
+                continue
+                
             filepath = os.path.join(subdir, file)
+            title = ""
+            artist = ""
+            
             try:
                 tag = TinyTag.get(filepath)
+                title = fix_mojibake(tag.title or "")
+                artist = fix_mojibake(tag.artist or "")
             except Exception:
-                continue
+                # Metadata read failed, fallback to filename
+                pass
 
-            title = fix_mojibake(tag.title or "") or os.path.splitext(file)[0]
-            artist = fix_mojibake(tag.artist or "") or "Unknown"
+            # Fallback if metadata missing or read failed
+            if not title:
+                title = os.path.splitext(file)[0]
+            if not artist:
+                artist = "Unknown"
 
             files_read += 1
             query = f"track:{title} artist:{artist}"
@@ -119,11 +135,7 @@ def scan_music_files(music_dir: str, gui_mode: bool = False) -> Generator[tuple[
         sys.exit(1)
 
     if not gui_mode:
-        print(
-            f"\nRead {files_read} audio files.\n"
-            "Note: Some files may have been skipped due to unsupported formats "
-            "or corrupted metadata.\n"
-        )
+        print(f"\nRead {files_read} audio files.")
 
 
 def _count_audio_files(music_dir: str) -> int:
@@ -175,7 +187,14 @@ def main() -> None:
                     "total": total_count,
                 })
 
-            track_id = client.search(query)
+            try:
+                track_id = client.search(query)
+            except Exception as e:
+                # If search fails (API error, network, etc), treat as no match
+                if gui:
+                    emit(True, {"type": "error", "text": f"Error searching '{display}': {str(e)}"})
+                track_id = None
+
             if track_id:
                 if track_id not in seen_ids:
                     seen_ids.add(track_id)
@@ -187,7 +206,7 @@ def main() -> None:
             else:
                 failed_file.write(f"{display}\n")
                 if gui:
-                    emit(True, {"type": "no_match", "name": display})
+                    emit(True, {"type": "fail", "name": display})
                 else:
                     print(f"  {searched}: {display} ✗ NO MATCH")
 

@@ -122,10 +122,28 @@ def main() -> None:
         _add_tracks_main()
     elif command == "listplaylists":
         _list_playlists_main()
+    elif command == "search":
+        _search_main()
     else:
         print(f"Unknown command: {command}")
-        print("Use 'scan', 'retry', 'youtube', or 'addtracks'. Run without arguments for help.")
+        print("Use 'scan', 'retry', 'youtube', 'addtracks', 'listplaylists', or 'search'.")
         sys.exit(1)
+
+
+def _search_main() -> None:
+    """Search for tracks and output JSON candidates (called from GUI)."""
+    import argparse
+    from spotify_client import SpotifyClient
+    
+    parser = argparse.ArgumentParser(description="Search Spotify tracks")
+    parser.add_argument("username")
+    parser.add_argument("-q", "--query", required=True)
+    parser.add_argument("--gui", action="store_true", help="Run in GUI mode (ignored)")
+    args = parser.parse_args()
+
+    client = SpotifyClient(args.username)
+    results = client.search_candidates(args.query)
+    print(json.dumps(results, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":

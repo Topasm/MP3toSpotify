@@ -883,3 +883,160 @@ code {
   color: var(--text-secondary, #999);
   font-style: italic;
 }
+
+/*  Import Cards ─ */
+.import-card { padding: 16px 20px; }
+
+.import-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.import-card-header h2 { margin: 0; font-size: 1rem; }
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+}
+
+.btn-full-width {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/*  Tab Badge  */
+.tab-badge {
+  background: var(--accent, #1DB954);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/*  Progress inside import ─ */
+.progress-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/*  Import Summary ─ */
+.import-summary {
+  margin-top: 8px;
+}
+
+/*  Section Divider ─ */
+.section-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  gap: 12px;
+  color: var(--text-secondary, #999);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, rgba(255,255,255,0.1));
+}
+
+/*  Song List Header  */
+.song-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.song-list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.song-list-header-left h3 { margin: 0; }
+
+.song-list-header-right {
+  display: flex;
+  gap: 8px;
+}
+
+/*  Song Toolbar  */
+.song-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));
+  margin-bottom: 8px;
+}
+
+/*  Empty State ─ */
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary, #999);
+}
+
+.empty-state p { margin: 4px 0; }
+
+/*  Song Item Alignment  */
+.song-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.05));
+}
+
+/* Spacer for failed songs (mimics checkbox width) */
+.song-checkbox-spacer {
+  width: 16px; /* Match standard checkbox width approx */
+  margin-right: 8px; /* Match checkbox margin */
+  display: inline-block;
+}
+
+.song-checkbox {
+  margin-right: 8px;
+}
+
+/*  Fix Match Button ─ */
+.btn-fix-match {
+  background: transparent;
+  border: 1px solid var(--text-secondary, #999);
+  color: var(--text-secondary, #999);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto; /* Push to right right */
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-fix-match:hover {
+  border-color: var(--accent, #1DB954);
+  color: var(--accent, #1DB954);
+  background: rgba(29, 185, 84, 0.1);
+}
+
+/* Ensure song item layout handles the push-right correctly */
+.song-name {
+  flex: 1; /* Allow name to take available space */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 8px;
+}

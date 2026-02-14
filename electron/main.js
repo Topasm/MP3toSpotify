@@ -89,6 +89,10 @@ ipcMain.handle("list-playlists", async (_event, options) => {
   return runPython("listplaylists", options);
 });
 
+ipcMain.handle("search", async (_event, options) => {
+  return runPython("search", options);
+});
+
 // Cancel running process
 ipcMain.handle("cancel-process", async () => {
   killPython();
@@ -124,6 +128,7 @@ function runPython(script, options) {
       "youtube_import.py": "youtube",
       "addtracks": "addtracks",
       "listplaylists": "listplaylists",
+      "search": "search",
     };
     const command = commandMap[script] || "scan";
     const exePath = getExePath();
@@ -140,6 +145,7 @@ function runPython(script, options) {
     if (options.outputFile) args.push("-o", options.outputFile);
     if (options.youtubeUrl) args.push("-u", options.youtubeUrl);
     if (options.trackIds) args.push("--tracks", options.trackIds);
+    if (options.query) args.push("-q", options.query);
 
     // Set environment variables for Spotify credentials
     const env = { ...process.env };
@@ -159,16 +165,23 @@ function runPython(script, options) {
     // Ensure stdout is decoded as UTF-8
     pythonProcess.stdout.setEncoding("utf-8");
 
+    let stdoutBuffer = "";
+
     pythonProcess.stdout.on("data", (data) => {
-      const str = data.toString();
-      const lines = str.split("\n").filter(Boolean);
-      for (const line of lines) {
+      stdoutBuffer += data.toString();
+      
+      let newlineIndex;
+      while ((newlineIndex = stdoutBuffer.indexOf("\n")) !== -1) {
+        const line = stdoutBuffer.slice(0, newlineIndex).trim();
+        stdoutBuffer = stdoutBuffer.slice(newlineIndex + 1);
+        
+        if (!line) continue;
+
         try {
           const msg = JSON.parse(line);
-          // If it's an array, it's the result of listplaylists
+          // If it's an array, it's the result of listplaylists or search
           if (Array.isArray(msg)) {
             resolved = true;
-            // Kill and clean up process since we got what we need
             if (pythonProcess) {
               pythonProcess.kill("SIGTERM");
               pythonProcess = null;
@@ -178,6 +191,7 @@ function runPython(script, options) {
           }
           mainWindow?.webContents.send("python-message", msg);
         } catch {
+          // If JSON parse fails, it might be a log message
           mainWindow?.webContents.send("python-message", {
             type: "log",
             text: line,
@@ -186,9 +200,12 @@ function runPython(script, options) {
       }
     });
 
+    let stderrBuffer = "";
+
     pythonProcess.stderr.on("data", (data) => {
       const text = data.toString().trim();
       if (text) {
+        stderrBuffer += text + "\n";
         mainWindow?.webContents.send("python-message", {
           type: "error",
           text,
@@ -203,7 +220,11 @@ function runPython(script, options) {
           type: "done",
           code,
         });
-        resolve({ success: code === 0 });
+        resolve({ 
+          success: code === 0,
+          code,
+          error: stderrBuffer.trim() || `Process exited with code ${code}` 
+        });
       }
     });
 

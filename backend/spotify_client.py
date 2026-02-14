@@ -93,6 +93,41 @@ class SpotifyClient:
             return None
         return None
 
+    def search_candidates(self, query: str, limit: int = 5) -> list[dict]:
+        """Search for a track and return a list of candidates.
+
+        Args:
+            query: Spotify search query string.
+            limit: Maximum number of results.
+
+        Returns:
+            List of track dicts: {id, name, artist, album, url, image}
+        """
+        try:
+            results = self.sp.search(query, limit=limit, type="track")
+            if not results or "tracks" not in results or "items" not in results["tracks"]:
+                return []
+                
+            items = results["tracks"]["items"]
+            candidates = []
+            for item in items:
+                image = None
+                if item["album"]["images"]:
+                    # Try to pick a small thumbnail (usually last one)
+                    image = item["album"]["images"][-1]["url"]
+
+                candidates.append({
+                    "id": item["id"],
+                    "name": item["name"],
+                    "artist": item["artists"][0]["name"],
+                    "album": item["album"]["name"],
+                    "url": item["external_urls"]["spotify"],
+                    "image": image
+                })
+            return candidates
+        except Exception:
+            return []
+
     def ensure_playlist(self, playlist_id: str = "", name: str = "MP3toSpotify") -> str:
         """Validate an existing playlist or create a new one.
 
