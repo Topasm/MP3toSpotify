@@ -5,6 +5,8 @@
 Match your local music library **or YouTube playlists** to Spotify and automatically create playlists.  
 Available as a **standalone desktop app** (Windows / macOS / Linux) and a **CLI tool**.
 
+![MP3toSpotify GUI](./screenshot.png)
+
 Scans audio files, reads metadata (title & artist), searches Spotify, and adds matched songs to a playlist. Also imports YouTube playlists via yt-dlp. Unmatched songs are saved for retry with advanced search strategies.
 
 **Key Features:**

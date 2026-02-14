@@ -57,6 +57,28 @@ def _add_tracks_main() -> None:
         print(f"Added {added} tracks to playlist {playlist_id}.")
 
 
+def _list_playlists_main() -> None:
+    """List user playlists (called from GUI or CLI)."""
+    import argparse
+    from spotify_client import SpotifyClient
+
+    parser = argparse.ArgumentParser(description="List Spotify playlists")
+    parser.add_argument("username", help="Spotify username")
+    parser.add_argument("--gui", action="store_true", help="JSON output mode")
+    args = parser.parse_args()
+
+    client = SpotifyClient(args.username)
+    playlists = client.get_user_playlists()
+
+    if args.gui:
+        import json
+        print(json.dumps(playlists), flush=True)
+    else:
+        print(f"\nFound {len(playlists)} playlists:")
+        for p in playlists:
+            print(f"- {p['name']} ({p['tracks_total']} tracks) [ID: {p['id']}]")
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print(
@@ -65,7 +87,8 @@ def main() -> None:
             "  scan      <username> [options]            Scan local files and match\n"
             "  retry     <username> [options]            Retry failed matches\n"
             "  youtube   <username> -u <url> [options]   Import YouTube playlist\n"
-            "  addtracks <username> --tracks id1,id2,..  Add tracks to playlist\n\n"
+            "  addtracks <username> --tracks id1,id2,..  Add tracks to playlist\n"
+            "  listplaylists <username>                  List user's playlists\n\n"
             "Examples:\n"
             '  mp3tospotify scan myuser -d "C:/Music"\n'
             "  mp3tospotify retry myuser -i failed_matches.txt\n"
@@ -88,6 +111,8 @@ def main() -> None:
         youtube_main()
     elif command == "addtracks":
         _add_tracks_main()
+    elif command == "listplaylists":
+        _list_playlists_main()
     else:
         print(f"Unknown command: {command}")
         print("Use 'scan', 'retry', 'youtube', or 'addtracks'. Run without arguments for help.")

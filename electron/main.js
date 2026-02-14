@@ -84,6 +84,11 @@ ipcMain.handle("add-tracks", async (_event, options) => {
   return runPython("addtracks", options);
 });
 
+// List user playlists
+ipcMain.handle("list-playlists", async (_event, options) => {
+  return runPython("listplaylists", options);
+});
+
 // Cancel running process
 ipcMain.handle("cancel-process", async () => {
   killPython();
@@ -118,6 +123,7 @@ function runPython(script, options) {
       "retry_failed.py": "retry",
       "youtube_import.py": "youtube",
       "addtracks": "addtracks",
+      "listplaylists": "listplaylists",
     };
     const command = commandMap[script] || "scan";
     const exePath = getExePath();
@@ -125,7 +131,14 @@ function runPython(script, options) {
     // Build argument list: command username --gui [options]
     const args = [command];
     if (options.username) args.push(options.username);
-    args.push("--gui");
+    
+    // Commands that support --gui but are not long-running scan processes
+    if (command === "listplaylists") {
+      args.push("--gui");
+    } else {
+      args.push("--gui");
+    }
+
     if (options.musicDir) args.push("-d", options.musicDir);
     if (options.playlistId) args.push("-p", options.playlistId);
     if (options.playlistName) args.push("-n", options.playlistName);
@@ -139,19 +152,29 @@ function runPython(script, options) {
     if (options.clientId) env.SPOTIPY_CLIENT_ID = options.clientId;
     if (options.clientSecret) env.SPOTIPY_CLIENT_SECRET = options.clientSecret;
 
+    // For non-streaming commands (like listplaylists), we might want to capture output differently,
+    // but the current architecture uses event streaming. We can adapt.
+    
     pythonProcess = spawn(exePath, args, {
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });
 
+    let collectedOutput = "";
+
     pythonProcess.stdout.on("data", (data) => {
-      const lines = data.toString().split("\n").filter(Boolean);
+      const str = data.toString();
+      const lines = str.split("\n").filter(Boolean);
       for (const line of lines) {
         try {
           const msg = JSON.parse(line);
+          // If it's an array, it's the result of listplaylists
+          if (Array.isArray(msg)) {
+             resolve(msg); // Resolve immediately for request/response style calls
+             return; 
+          }
           mainWindow?.webContents.send("python-message", msg);
         } catch {
-          // Non-JSON output (legacy print statements)
           mainWindow?.webContents.send("python-message", {
             type: "log",
             text: line,

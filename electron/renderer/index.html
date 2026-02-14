@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div class="background-blobs">
+    <div class="blob"></div>
+    <div class="blob"></div>
+  </div>
   <div class="app">
     <!-- Header -->
     <header class="header">
@@ -65,7 +69,10 @@
         <h2>🎧 Playlist</h2>
         <div class="form-group">
           <label for="playlist-id">Playlist ID <span class="optional">(optional — leave empty to create new)</span></label>
-          <input type="text" id="playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+          <div class="input-row">
+            <input type="text" id="playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+            <button class="btn btn-secondary btn-browse-playlist" data-target="playlist-id">📋 Browse</button>
+          </div>
         </div>
       </div>
 
@@ -93,7 +100,10 @@
         <h2>🎧 Playlist</h2>
         <div class="form-group">
           <label for="retry-playlist-id">Playlist ID <span class="optional">(optional)</span></label>
-          <input type="text" id="retry-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+          <div class="input-row">
+            <input type="text" id="retry-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+            <button class="btn btn-secondary btn-browse-playlist" data-target="retry-playlist-id">📋 Browse</button>
+          </div>
         </div>
       </div>
 
@@ -122,7 +132,10 @@
         <h2>🎧 Spotify Playlist</h2>
         <div class="form-group">
           <label for="yt-playlist-id">Playlist ID <span class="optional">(optional — leave empty to create new)</span></label>
-          <input type="text" id="yt-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+          <div class="input-row">
+            <input type="text" id="yt-playlist-id" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M" spellcheck="false">
+            <button class="btn btn-secondary btn-browse-playlist" data-target="yt-playlist-id">📋 Browse</button>
+          </div>
         </div>
       </div>
 
@@ -193,6 +206,22 @@
         <div id="song-list" class="song-list"></div>
       </div>
     </section>
+
+    <!-- Playlist Picker Modal -->
+    <div id="playlist-modal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Select a Playlist</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="playlist-list" class="playlist-list">
+            <!-- Playlists injected here -->
+            <div class="loading-spinner">Loading playlists...</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

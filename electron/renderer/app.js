@@ -493,5 +493,94 @@ els.btnAddToPlaylist.addEventListener("click", async () => {
   });
 });
 
+// ── Playlist Picker ──────────────────────────────────────────────────────
+const playlistModal = {
+  el: $("#playlist-modal"),
+  list: $("#playlist-list"),
+  closeBtn: $(".close-modal"),
+  targetInput: null,
+
+  open(targetInputId) {
+    this.targetInput = $(`#${targetInputId}`);
+    this.el.style.display = "block";
+    this.loadPlaylists();
+  },
+
+  close() {
+    this.el.style.display = "none";
+    this.targetInput = null;
+    this.list.innerHTML = '<div class="loading-spinner">Loading playlists...</div>';
+  },
+
+  async loadPlaylists() {
+    const creds = validateCredentials();
+    if (!creds) {
+      this.close();
+      return;
+    }
+
+    try {
+      this.list.innerHTML = '<div class="loading-spinner">Fetching playlists from Spotify...</div>';
+      const playlists = await window.api.listPlaylists({
+        username: creds.username,
+        clientId: creds.clientId,
+        clientSecret: creds.clientSecret,
+      });
+
+      if (!playlists || playlists.length === 0) {
+        this.list.innerHTML = '<div class="error-message">No playlists found.</div>';
+        return;
+      }
+
+      this.render(playlists);
+    } catch (err) {
+      console.error(err);
+      this.list.innerHTML = `<div class="error-message">Error: ${err.message || "Failed to load playlists"}</div>`;
+    }
+  },
+
+  render(playlists) {
+    this.list.innerHTML = "";
+    playlists.forEach((p) => {
+      const div = document.createElement("div");
+      div.className = "playlist-item";
+      div.innerHTML = `
+        <div class="playlist-info">
+          <span class="playlist-name">${escapeHtml(p.name)}</span>
+          <span class="playlist-meta">${p.tracks_total} tracks • ID: ${p.id}</span>
+        </div>
+        <button class="playlist-select-btn">Select</button>
+      `;
+      div.addEventListener("click", () => {
+        if (this.targetInput) {
+          this.targetInput.value = p.id;
+          // Flash input to show update
+          this.targetInput.style.borderColor = "var(--accent)";
+          setTimeout(() => (this.targetInput.style.borderColor = ""), 500);
+        }
+        this.close();
+      });
+      this.list.appendChild(div);
+    });
+  },
+};
+
+// Event Listeners for Playlist Picker
+$$(".btn-browse-playlist").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.target;
+    if (target) playlistModal.open(target);
+  });
+});
+
+playlistModal.closeBtn.addEventListener("click", () => playlistModal.close());
+
+// Close modal when clicking outside
+window.addEventListener("click", (e) => {
+  if (e.target === playlistModal.el) {
+    playlistModal.close();
+  }
+});
+
 // ── Init ──────────────────────────────────────────────────────────────────
 loadSettings();

@@ -19,7 +19,7 @@ import spotipy
 from spotipy import oauth2
 from spotipy.exceptions import SpotifyException
 
-_SCOPE = "playlist-modify-public playlist-modify-private user-library-modify"
+_SCOPE = "playlist-modify-public playlist-modify-private playlist-read-private user-library-modify"
 _REDIRECT_URI = "http://127.0.0.1:8080"
 _BATCH_SIZE = 100  # Spotify API limit for adding tracks per request.
 _RATE_LIMIT_WAIT = 0.3  # Seconds to wait on rate-limit errors.
@@ -180,3 +180,30 @@ class SpotifyClient:
                         remaining = remaining[_BATCH_SIZE:]
 
         return added
+
+    def get_user_playlists(self) -> list[dict]:
+        """Fetch all playlists for the current user.
+
+        Returns:
+            List of dicts with 'id', 'name', 'tracks_total'.
+        """
+        playlists = []
+        try:
+            results = self.sp.current_user_playlists(limit=50)
+            while results:
+                for item in results["items"]:
+                    if item:  # item can be None if playlist was deleted but still in cache
+                        playlists.append({
+                            "id": item["id"],
+                            "name": item["name"],
+                            "tracks_total": item["tracks"]["total"],
+                        })
+                if results["next"]:
+                    results = self.sp.next(results)
+                else:
+                    results = None
+        except SpotifyException as e:
+            print(f"Error fetching playlists: {e}")
+            return []
+        
+        return playlists
