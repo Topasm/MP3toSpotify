@@ -1040,3 +1040,11 @@ code {
   text-overflow: ellipsis;
   margin-right: 8px;
 }
+
+/* Drag & Drop */
+.drag-over {
+  border: 2px dashed var(--accent) !important;
+  background: rgba(29, 185, 84, 0.08) !important;
+  transition: all 0.2s ease;
+}
+

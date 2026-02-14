@@ -54,17 +54,58 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_failed_songs(filepath: str) -> list[str]:
-    """Read and fix encoding of failed matches file."""
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            lines = [fix_song_line(line) for line in f if line.strip()]
-    except FileNotFoundError:
-        print(f"Error: File not found: {filepath}")
+    """Read songs from a text file or M3U playlist.
+    
+    Supports:
+    - Plain text (one song per line)
+    - M3U/M3U8 playlists (parses #EXTINF or raw paths/URLs)
+    """
+    songs = []
+    encodings = ["utf-8", "utf-8-sig", "latin-1", "cp1252"]
+    
+    content = None
+    for enc in encodings:
+        try:
+            with open(filepath, "r", encoding=enc) as f:
+                content = f.read()
+            break
+        except UnicodeDecodeError:
+            continue
+            
+    if content is None:
+        print(f"Error: Could not read file {filepath} with any supported encoding.")
         sys.exit(1)
-    except UnicodeDecodeError:
-        with open(filepath, "r", encoding="latin-1") as f:
-            lines = [fix_song_line(line) for line in f if line.strip()]
-    return lines
+
+    lines = content.splitlines()
+
+    # M3U Parsing
+    if filepath.lower().endswith((".m3u", ".m3u8")):
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("#EXTM3U"):
+                continue
+            
+            # #EXTINF:123,Artist - Title
+            if line.startswith("#EXTINF:"):
+                # Extract everything after the comma
+                parts = line.split(",", 1)
+                if len(parts) > 1:
+                    songs.append(fix_song_line(parts[1]))
+            # If it's a file path or URL and NOT a comment (some M3Us list paths)
+            elif not line.startswith("#"):
+                # It might be a filename like "C:\Music\Artist - Title.mp3"
+                # We can try to extract the base name
+                import os
+                basename = os.path.basename(line)
+                name_without_ext = os.path.splitext(basename)[0]
+                songs.append(fix_song_line(name_without_ext))
+    else:
+        # Plain text parsing
+        songs = [fix_song_line(line) for line in lines if line.strip()]
+
+    return songs
 
 
 def main() -> None:

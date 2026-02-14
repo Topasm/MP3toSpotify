@@ -95,10 +95,27 @@ ipcMain.handle("select-folder", async () => {
 ipcMain.handle("select-file", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ["openFile"],
-    title: "Select Failed Matches File",
-    filters: [{ name: "Text Files", extensions: ["txt"] }],
+    title: "Select Failed Matches File or M3U Playlist",
+    filters: [{ name: "Text/Playlist", extensions: ["txt", "m3u", "m3u8"] }],
   });
   return result.canceled ? null : result.filePaths[0];
+});
+
+// Save file dialog (for M3U export)
+ipcMain.handle("save-file", async (_event, options) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: options.title || "Save File",
+    defaultPath: options.defaultPath || "playlist.m3u",
+    filters: options.filters || [{ name: "M3U Playlist", extensions: ["m3u"] }],
+  });
+  return result.canceled ? null : result.filePath;
+});
+
+// Write file to disk (for M3U export)
+ipcMain.handle("write-file", async (_event, options) => {
+  const fs = require("fs");
+  fs.writeFileSync(options.filePath, options.content, "utf-8");
+  return { success: true };
 });
 
 // Start scan & match process
@@ -199,7 +216,6 @@ function runPython(script, options) {
     if (options.youtubeUrl) args.push("-u", options.youtubeUrl);
     if (options.trackIds) args.push("--tracks", options.trackIds);
     if (options.query) args.push("-q", options.query);
-    if (options.restoreFile) args.push("--restore", options.restoreFile);
     if (options.scanOnly) args.push("--scan-only");
 
     // Set environment variables for Spotify credentials

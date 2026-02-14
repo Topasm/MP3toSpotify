@@ -7,6 +7,8 @@ contextBridge.exposeInMainWorld("api", {
   // Dialog pickers
   selectFolder: () => ipcRenderer.invoke("select-folder"),
   selectFile: () => ipcRenderer.invoke("select-file"),
+  saveFile: (options) => ipcRenderer.invoke("save-file", options),
+  writeFile: (options) => ipcRenderer.invoke("write-file", options),
 
   // Process control
   startScan: (options) => ipcRenderer.invoke("start-scan", options),

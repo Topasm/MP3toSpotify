@@ -46,15 +46,16 @@
       </div>
 
       <!-- Local Folder Import -->
-      <div class="card import-card">
+      <div class="card import-card" id="local-music-card">
         <div class="import-card-header">
           <h2>📂 Local Music</h2>
           <button id="btn-start-scan" class="btn btn-primary btn-sm">Import</button>
         </div>
         <div class="input-row">
-          <input type="text" id="music-dir" placeholder="Select your music folder..." readonly>
+          <input type="text" id="music-dir" placeholder="Select or drag a folder here..." readonly>
           <button id="btn-select-folder" class="btn btn-secondary btn-sm">Browse</button>
         </div>
+        <p class="hint" id="drop-hint">💡 You can also drag & drop a music folder here</p>
       </div>
 
       <!-- YouTube Import -->
@@ -67,14 +68,13 @@
         <p class="hint">Supports playlists, single videos, and YouTube Music URLs.</p>
       </div>
 
-      <!-- Retry Failed -->
       <div class="card import-card">
         <div class="import-card-header">
-          <h2>🔄 Retry Failed</h2>
+          <h2>📄 File Import</h2>
           <button id="btn-start-retry" class="btn btn-primary btn-sm">Import</button>
         </div>
         <div class="input-row">
-          <input type="text" id="retry-input" placeholder="Select failed matches file..." readonly>
+          <input type="text" id="retry-input" placeholder="Select failed matches list or M3U playlist..." readonly>
           <button id="btn-select-file" class="btn btn-secondary btn-sm">Browse</button>
         </div>
       </div>
@@ -147,6 +147,7 @@
           <button id="btn-go-to-playlist" class="btn btn-primary btn-add-playlist">
             Add to Playlist →
           </button>
+          <button id="btn-export-m3u" class="btn btn-secondary btn-sm" title="Export matched songs as M3U playlist">📥 Export M3U</button>
         </div>
 
         <div id="song-list" class="song-list">

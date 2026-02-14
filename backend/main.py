@@ -19,7 +19,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+import traceback
 from typing import Generator
 
 from tinytag import TinyTag
@@ -27,6 +29,7 @@ from tinytag import TinyTag
 from encoding_utils import fix_mojibake
 from gui_utils import emit
 from spotify_client import SpotifyClient
+from search_strategies import search_with_fallback
 
 
 def parse_args() -> argparse.Namespace:
@@ -97,6 +100,10 @@ def scan_music_files(music_dir: str, gui_mode: bool = False) -> Generator[tuple[
 
     for subdir, _, files in os.walk(music_dir):
         for file in files:
+            # Skip hidden files and macOS resource forks (._file.mp3)
+            if file.startswith("."):
+                continue
+
             if not file.lower().endswith(supported_exts):
                 continue
                 
@@ -112,16 +119,31 @@ def scan_music_files(music_dir: str, gui_mode: bool = False) -> Generator[tuple[
                 # Metadata read failed, fallback to filename
                 pass
 
-            # Fallback if metadata missing or read failed
-            if not title:
-                title = os.path.splitext(file)[0]
-            if not artist:
-                artist = "Unknown"
+            # Fallback: parse artist/title from filename if metadata is missing
+            if not title or not artist or artist == "Unknown":
+                basename = os.path.splitext(file)[0]
+                # Try common patterns: "Artist - Title", "Artist_-_Title", "Artist — Title"
+                for sep in [" - ", " — ", " – ", "_-_"]:
+                    if sep in basename:
+                        parts = basename.split(sep, 1)
+                        if not artist or artist == "Unknown":
+                            artist = parts[0].strip()
+                        if not title:
+                            title = parts[1].strip()
+                        break
+                # If still no title, use full filename
+                if not title:
+                    title = basename.strip()
+                # Clean up common junk from filenames
+                # Remove leading track numbers like "01 ", "01. ", "01 - "
+                title = re.sub(r"^\d{1,3}[\.\-\s]+\s*", "", title).strip()
+                if not artist:
+                    artist = "Unknown"
 
             files_read += 1
-            query = f"track:{title} artist:{artist}"
+            # query = f"track:{title} artist:{artist}"
             display = f"{artist} - {title}"
-            yield query, display
+            yield artist, title, display
 
     if files_read == 0:
         msg = (
@@ -131,11 +153,8 @@ def scan_music_files(music_dir: str, gui_mode: bool = False) -> Generator[tuple[
         if gui_mode:
             emit(True, {"type": "error", "text": msg})
         else:
-            print(f"\n{msg}")
+            print(msg)
         sys.exit(1)
-
-    if not gui_mode:
-        print(f"\nRead {files_read} audio files.")
 
 
 def _count_audio_files(music_dir: str) -> int:
@@ -143,6 +162,8 @@ def _count_audio_files(music_dir: str) -> int:
     count = 0
     for _, _, files in os.walk(music_dir):
         for f in files:
+            if f.startswith("."):
+                continue
             if f.lower().endswith(
                 (".mp3", ".flac", ".ogg", ".opus", ".wma", ".wav",
                  ".m4a", ".aac", ".aiff", ".dsf", ".wv")
@@ -153,6 +174,18 @@ def _count_audio_files(music_dir: str) -> int:
 
 def main() -> None:
     """Main entry point."""
+    try:
+        _main_logic()
+    except Exception as e:
+        # Catch unexpected crashes and report to GUI
+        emit(True, {"type": "error", "text": f"Critical Error: {str(e)}"})
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+def _main_logic() -> None:
+    """Core logic, wrapped by main() for error handling."""
     args = parse_args()
     gui = args.gui
 
@@ -173,76 +206,73 @@ def main() -> None:
 
     track_ids: list[str] = []
     seen_ids: set[str] = set()          # deduplication
-    searched = 0
-
+    
     with open(args.output, "w", encoding="utf-8") as failed_file:
-        for query, display in scan_music_files(music_dir, gui_mode=gui):
-            searched += 1
-
+        for i, (artist, title, display_name) in enumerate(scan_music_files(music_dir, gui), 1):
             if gui:
                 emit(True, {
                     "type": "progress",
-                    "text": display,
-                    "current": searched,
+                    "text": display_name,
+                    "current": i,
                     "total": total_count,
                 })
 
-            try:
-                track_id = client.search(query)
-            except Exception as e:
-                # If search fails (API error, network, etc), treat as no match
-                if gui:
-                    emit(True, {"type": "error", "text": f"Error searching '{display}': {str(e)}"})
-                track_id = None
+            track_id = search_with_fallback(client, artist, title)
 
             if track_id:
                 if track_id not in seen_ids:
                     seen_ids.add(track_id)
                     track_ids.append(track_id)
                 if gui:
-                    emit(True, {"type": "match", "name": display, "trackId": track_id})
+                    emit(True, {
+                        "type": "match",
+                        "trackId": track_id,
+                        "name": display_name 
+                    })
                 else:
-                    print(f"  {searched}: {display} ✓")
+                    print(f"  [{i}/{total_count}] {display_name[:60]:<60} ✓")
             else:
-                failed_file.write(f"{display}\n")
                 if gui:
-                    emit(True, {"type": "fail", "name": display})
+                    emit(True, {
+                        "type": "no_match",
+                        "name": display_name 
+                    })
                 else:
-                    print(f"  {searched}: {display} ✗ NO MATCH")
+                    print(f"  [{i}/{total_count}] {display_name[:60]:<60} ✗")
+                
+                failed_file.write(f"{display_name}\n")
+                failed_file.flush()
 
     # Summary
-    matched = len(track_ids)
+    found_count = len(track_ids)
+    scanned_count = i if 'i' in locals() else 0
+    
     if gui:
         emit(True, {
             "type": "summary",
-            "total": searched,
-            "matched": matched,
-            "failed": searched - matched,
+            "total": total_count,
+            "matched": found_count,
+            "failed": scanned_count - found_count,
         })
-    elif searched > 0:
-        rate = matched / searched * 100
-        print(f"\n{'='*50}")
-        print(f"  Total scanned : {searched}")
-        print(f"  Matched       : {matched} ({rate:.1f}%)")
-        print(f"  Unmatched     : {searched - matched}")
-        print(f"{'='*50}\n")
     else:
-        print("\nNo songs were searched.")
-        return
+        print(f"\nDone! Found {found_count} tracks.")
+        print(f"Failed matches saved to '{args.output}'.")
 
-    # In GUI mode, don't auto-add — let the user select via checkboxes
-    if gui:
-        return
+    # Add to playlist (CLI only, GUI handles via IPC)
+    if not gui and track_ids:
+        if args.playlist_id:
+            client.add_tracks(args.playlist_id, track_ids)
+            print(f"Added {len(track_ids)} tracks to playlist.")
+        elif args.playlist_name:
+            pid = client.ensure_playlist(name=args.playlist_name)
+            client.add_tracks(pid, track_ids)
+            print(f"Added {len(track_ids)} tracks to playlist '{args.playlist_name}'.")
+        else:
+            print("No playlist specified. Tracks found but not added.")
 
-    # CLI mode: add all matched tracks to playlist
-    if track_ids:
-        playlist_id = client.ensure_playlist(args.playlist_id)
-        added = client.add_tracks(playlist_id, track_ids)
-        print(f"Successfully added {added} songs to the playlist.")
-
-    if searched > matched:
+    if not gui and scanned_count > found_count:
         print(
-            f"\n{searched - matched} unmatched songs written to '{args.output}'.\n"
+            f"\n{scanned_count - found_count} unmatched songs written to '{args.output}'.\n"
             "Use retry_failed.py to retry with advanced search strategies."
         )
     print("\nDone! Thank you for using MP3toSpotify.")

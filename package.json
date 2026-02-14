@@ -1,6 +1,6 @@
 {
   "name": "mp3-to-spotify",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "🚀 Sync Local Music & YouTube to Spotify. Match files, compare playlists, and fill gaps. (GUI & CLI)",
   "author": "Topasm",
   "main": "electron/main.js",

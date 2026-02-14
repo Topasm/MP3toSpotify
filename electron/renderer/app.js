@@ -41,9 +41,11 @@ const els = {
   settingsStatus: $("#settings-status"),
 
   // Import: Local
+  localMusicCard: $("#local-music-card"),
   musicDir: $("#music-dir"),
   btnSelectFolder: $("#btn-select-folder"),
   btnStartScan: $("#btn-start-scan"),
+  dropHint: $("#drop-hint"),
 
   // Import: Retry
   retryInput: $("#retry-input"),
@@ -75,6 +77,7 @@ const els = {
   selectAllCheckbox: $("#select-all-checkbox"),
   selectedCount: $("#selected-count"),
   btnGoToPlaylist: $("#btn-go-to-playlist"),
+  btnExportM3u: $("#btn-export-m3u"),
   tabSongCount: $("#tab-song-count"),
 
   // Playlist
@@ -483,6 +486,38 @@ els.btnSelectFolder.addEventListener("click", async () => {
   if (folder) els.musicDir.value = folder;
 });
 
+// Drag & Drop support for Local Music card
+const dropTarget = els.localMusicCard;
+
+// Prevent default drag behavior on the whole window
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => e.preventDefault());
+
+dropTarget.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropTarget.classList.add("drag-over");
+});
+
+dropTarget.addEventListener("dragleave", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropTarget.classList.remove("drag-over");
+});
+
+dropTarget.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropTarget.classList.remove("drag-over");
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    // Use the first item's path — works for both files and folders in Electron
+    const droppedPath = files[0].path;
+    els.musicDir.value = droppedPath;
+  }
+});
+
 els.btnSelectFile.addEventListener("click", async () => {
   const file = await window.api.selectFile();
   if (file) els.retryInput.value = file;
@@ -603,6 +638,43 @@ els.btnGoToPlaylist.addEventListener("click", () => {
     return;
   }
   switchTab("playlist");
+});
+
+// M3U Playlist Export
+els.btnExportM3u.addEventListener("click", async () => {
+  const matched = state.songs.filter((s) => s.status === "matched" && s.trackId);
+  if (matched.length === 0) {
+    alert("No matched songs to export.");
+    return;
+  }
+
+  const filePath = await window.api.saveFile({
+    title: "Export M3U Playlist",
+    defaultPath: "playlist.m3u",
+    filters: [
+      { name: "M3U Playlist", extensions: ["m3u"] },
+      { name: "All Files", extensions: ["*"] },
+    ],
+  });
+
+  if (!filePath) return; // User cancelled
+
+  // Build M3U content
+  let m3u = "#EXTM3U\n";
+  matched.forEach((song) => {
+    const name = song.name || "Unknown";
+    m3u += `#EXTINF:-1,${name}\n`;
+    // Use Spotify track URL as the entry
+    m3u += `https://open.spotify.com/track/${song.trackId}\n`;
+  });
+
+  // Write via a simple IPC call — we'll use the main process
+  try {
+    await window.api.writeFile({ filePath, content: m3u });
+    alert(`Exported ${matched.length} tracks to M3U.`);
+  } catch (err) {
+    alert(`Export failed: ${err.message}`);
+  }
 });
 
 // ?? Playlist Tab ??????????????????????????????????????????????????????????
