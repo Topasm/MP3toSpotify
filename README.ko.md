@@ -16,8 +16,10 @@
 **주요 기능:**
 - 🖥️ Electron 기반 데스크톱 GUI — 실시간 진행 상황 표시
 - 🎵 로컬 음악 디렉토리 재귀 스캔 (TinyTag)
+- 📂 **드래그 앤 드롭** 폴더 지원
 - ▶️ YouTube 플레이리스트 가져오기 (yt-dlp — 다운로드 불필요)
 - 🔍 다중 검색 전략으로 Spotify 매칭 (괄호 제거, feat. 제거 등)
+- 📄 **File Import** (M3U/M3U8 플레이리스트 & 실패 매칭 목록) 지원
 - ☑️ 체크박스 기반 트랙 선택 — 원하는 곡만 골라서 플레이리스트에 추가
 - 📋 기존 Spotify 플레이리스트 탐색 및 선택 — 플레이리스트 ID를 직접 복사할 필요 없음
 - 🔀 중복 트랙 자동 감지 및 제거
@@ -65,25 +67,25 @@
 
 | 섹션 (Section) | 기능 |
 |----------------|------|
-| **Local Music** | 로컬 음악 폴더 선택 → 파일 스캔 → Spotify 매칭 |
+| **Local Music** | 로컬 음악 폴더 선택 (또는 드래그 앤 드롭) → 파일 스캔 → Spotify 매칭 |
 | **YouTube Playlist** | YouTube 플레이리스트 URL 입력 → Spotify 매칭 |
-| **Retry Failed** | 매칭 실패 곡을 더 스마트한 검색 전략으로 재시도 |
+| **File Import** | M3U 플레이리스트 또는 매칭 실패 목록 가져오기 |
 | **Remove Duplicates** | 플레이리스트에서 중복 곡 스캔, 미리보기, 제거 |
 
 **사용 흐름:**
 1. **Import** 탭으로 이동합니다.
 2. 소스를 선택하고 "Import" 또는 "Browse"를 클릭합니다.
-   - **Local Music**: 폴더 선택
+   - **Local Music**: 폴더 선택 또는 **드래그 앤 드롭**
    - **YouTube**: URL 입력
-   - **Retry**: 실패 파일 선택
+   - **File Import**: 실패 목록 또는 **M3U 플레이리스트** 선택
 3. 대시보드에서 실시간 진행 상황을 확인합니다 (Scanned / Matched / Failed).
 4. 완료되면 녹색 **"Review Songs"** 버튼을 클릭합니다.
 
 ![Import Success](docs/imported.png)
 
 5. **체크박스**로 추가할 곡을 선택합니다.
-6. **"Add to Playlist"**를 클릭합니다.
 7. **새 플레이리스트 생성** 또는 기존 플레이리스트 선택이 가능합니다.
+8. (선택 사항) **"Export M3U"**를 클릭하여 매칭된 곡을 파일로 저장할 수 있습니다.
 
 ![Playlist Tab](docs/playlist_tab.png)
 

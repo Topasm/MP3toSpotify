@@ -16,9 +16,10 @@ Available as a modern **Desktop App** (Windows / macOS / Linux) and **CLI**.
 **Key Features:**
 - 🖥️ Modern desktop GUI (Electron) with real-time progress
 - 🎵 Recursive local music directory scanning via TinyTag
+- 📂 **Drag & Drop** folder support for easy import
 - ▶️ YouTube playlist import (via yt-dlp — no download required)
 - 🔍 Smart Spotify search with multiple fallback strategies
-- 🔄 Retry failed matches with bracket/feat. removal, title-only search
+- 📄 **File Import** (M3U/M3U8 playlists & failed matches) with advanced retry logic
 - ☑️ Checkbox-based track selection — choose which songs to add to your playlist
 - 📋 Browse & select existing Spotify playlists — no need to manually copy playlist IDs
 - 🆕 Create New Spotfy Playlists directly within the app
@@ -68,17 +69,17 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 
 | Section | What it does |
 |---------|-------------|
-| **Local Music** | Select a local music folder → scans files → matches to Spotify |
+| **Local Music** | Select a local music folder (or Drag & Drop) → scans files → matches to Spotify |
 | **YouTube Playlist** | Paste a YouTube playlist URL → matches to Spotify |
-| **Retry Failed** | Retry unmatched songs with smarter search strategies |
+| **File Import** | Import M3U playlists or retry failed matches with smarter search |
 | **Remove Duplicates** | Scan a playlist for duplicates, preview, and remove them |
 
 **Step by step:**
 1. Go to the **Import** tab.
 2. Choose your source:
-   - **Local Music**: Click "Browse" to select a folder, then "Import".
+   - **Local Music**: Click "Browse" or **Drag & Drop** a folder.
    - **YouTube**: Paste a URL and click "Import".
-   - **Retry**: Select a failed matches file and click "Import".
+   - **File Import**: Select a failed matches list or **M3U playlist**.
 3. Watch real-time progress on the dashboard (Scanned / Matched / Failed).
 4. When finished, click the green **"Review Songs"** button.
 
@@ -87,6 +88,7 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 5. Use **checkboxes** to pick which songs to add.
 6. Click **"Add to Playlist"**.
 7. You can **Create a New Playlist** directly or select an existing one.
+8. (Optional) Click **"Export M3U"** to save matched songs as a file.
 
 ![Playlist Tab](docs/playlist_tab.png)
 
