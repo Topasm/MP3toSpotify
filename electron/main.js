@@ -16,6 +16,7 @@ function createWindow() {
     minHeight: 600,
     title: "MP3toSpotify",
     backgroundColor: "#1a1a2e",
+    icon: path.join(__dirname, "assets", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -32,7 +33,43 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+const fs = require("fs");
+
+async function generateIconIfNeeded() {
+  const iconPath = path.join(__dirname, "assets", "icon.png");
+  const svgPath = path.join(__dirname, "assets", "icon.svg");
+
+  if (!fs.existsSync(iconPath) && fs.existsSync(svgPath)) {
+    console.log("Generating icon.png from icon.svg...");
+    const win = new BrowserWindow({ 
+      show: false, 
+      width: 512, 
+      height: 512,
+      webPreferences: { offscreen: true } 
+    });
+    
+    const svgData = fs.readFileSync(svgPath);
+    const dataUri = `data:image/svg+xml;base64,${svgData.toString("base64")}`;
+    
+    try {
+      await win.loadURL(dataUri);
+      // Give it a moment to render
+      await new Promise(r => setTimeout(r, 500));
+      const image = await win.webContents.capturePage();
+      fs.writeFileSync(iconPath, image.toPNG());
+      console.log("icon.png generated.");
+    } catch (err) {
+      console.error("Failed to generate icon:", err);
+    } finally {
+      win.close();
+    }
+  }
+}
+
+app.whenReady().then(async () => {
+  await generateIconIfNeeded();
+  createWindow();
+});
 
 app.on("window-all-closed", () => {
   killPython();

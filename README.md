@@ -7,6 +7,7 @@
 Match your local music library **or YouTube playlists** to Spotify and automatically create playlists.  
 Available as a **standalone desktop app** (Windows / macOS / Linux) and a **CLI tool**.
 
+![MP3toSpotify Banner](banner.png)
 ![MP3toSpotify GUI](./screenshot.png)
 
 **Key Features:**
@@ -78,7 +79,21 @@ MP3, FLAC, OGG, Opus, WMA, WAV, M4A, AAC, AIFF, DSF, WavPack
 - Select All / Deselect All toggle
 - Duplicate tracks are automatically skipped
 
----
+
+81: ### 4. Compare Mode
+82: 
+83: Compare your local music files with an existing Spotify playlist to easily add missing tracks.
+84: 
+85: 1. Go to the **Playlist** tab.
+86: 2. Select a target playlist from the dropdown.
+87: 3. Click **Compare**.
+88: 4. Review the results:
+89:    - Tracks already in the playlist are marked **"In Playlist"** and automatically unchecked.
+90:    - Missing tracks are marked **"Missing"** and remain checked.
+91: 5. Click **"Show Missing"** to filter the list.
+92: 6. Click **"Add to Playlist"** to add only the new tracks.
+93: 
+94: ---
 
 ## CLI Usage
 
