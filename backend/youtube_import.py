@@ -238,22 +238,32 @@ def main() -> None:
         seen_titles.add(title_key)
 
         if gui:
+            emit(True, {"type": "scanned_tag", "name": display_name})
             emit(True, {"type": "progress", "text": display_name, "current": i, "total": total})
 
-        track_id = search_with_fallback(client, artist, song_title, channel)
+        result = search_with_fallback(client, artist, song_title, channel)
 
-        if track_id:
+        if result:
+            track_id = result["id"]
             if track_id not in seen_ids:
                 seen_ids.add(track_id)
                 track_ids.append(track_id)
             if gui:
-                emit(True, {"type": "match", "name": display_name, "trackId": track_id})
+                emit(True, {
+                    "type": "match",
+                    "name": display_name,
+                    "trackId": track_id,
+                    "spotifyName": result.get("name", ""),
+                    "spotifyArtist": result.get("artist", ""),
+                    "spotifyAlbum": result.get("album", ""),
+                    "spotifyImage": result.get("image", ""),
+                })
             else:
                 print(f"  [{i:>4}/{total}] {display_name[:55].ljust(55)} ✓ MATCHED")
         else:
             failed.append(display_name)
             if gui:
-                emit(True, {"type": "no_match", "name": display_name})
+                emit(True, {"type": "fail", "name": display_name})
             else:
                 print(f"  [{i:>4}/{total}] {display_name[:55].ljust(55)} ✗ FAILED")
 

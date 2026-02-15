@@ -151,30 +151,40 @@ def main() -> None:
         artist, title = parse_song_line(song_line)
 
         if gui:
+            emit(True, {"type": "scanned_tag", "name": song_line})
             emit(True, {"type": "progress", "text": song_line, "current": i, "total": total})
 
         if not title:
             still_failed.append(song_line)
             if gui:
-                emit(True, {"type": "no_match", "name": song_line})
+                emit(True, {"type": "fail", "name": song_line})
             else:
                 print(f"  [{i:>4}/{total}] {song_line[:65].ljust(65)} SKIP")
             continue
 
-        track_id = search_with_fallback(client, artist, title)
+        result = search_with_fallback(client, artist, title)
 
-        if track_id:
+        if result:
+            track_id = result["id"]
             if track_id not in seen_ids:
                 seen_ids.add(track_id)
                 track_ids.append(track_id)
             if gui:
-                emit(True, {"type": "match", "name": song_line, "trackId": track_id})
+                emit(True, {
+                    "type": "match",
+                    "name": song_line,
+                    "trackId": track_id,
+                    "spotifyName": result.get("name", ""),
+                    "spotifyArtist": result.get("artist", ""),
+                    "spotifyAlbum": result.get("album", ""),
+                    "spotifyImage": result.get("image", ""),
+                })
             else:
                 print(f"  [{i:>4}/{total}] {song_line[:65].ljust(65)} ✓ FOUND")
         else:
             still_failed.append(song_line)
             if gui:
-                emit(True, {"type": "no_match", "name": song_line})
+                emit(True, {"type": "fail", "name": song_line})
             else:
                 print(f"  [{i:>4}/{total}] {song_line[:65].ljust(65)} ✗ NOT FOUND")
 

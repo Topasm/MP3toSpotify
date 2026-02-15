@@ -210,6 +210,11 @@ def _main_logic() -> None:
     with open(args.output, "w", encoding="utf-8") as failed_file:
         for i, (artist, title, display_name) in enumerate(scan_music_files(music_dir, gui), 1):
             if gui:
+                # Immediate tag preview event
+                emit(True, {
+                    "type": "scanned_tag",
+                    "name": display_name
+                })
                 emit(True, {
                     "type": "progress",
                     "text": display_name,
@@ -217,9 +222,10 @@ def _main_logic() -> None:
                     "total": total_count,
                 })
 
-            track_id = search_with_fallback(client, artist, title)
+            result = search_with_fallback(client, artist, title)
 
-            if track_id:
+            if result:
+                track_id = result["id"]
                 if track_id not in seen_ids:
                     seen_ids.add(track_id)
                     track_ids.append(track_id)
@@ -227,14 +233,18 @@ def _main_logic() -> None:
                     emit(True, {
                         "type": "match",
                         "trackId": track_id,
-                        "name": display_name 
+                        "name": display_name,
+                        "spotifyName": result.get("name", ""),
+                        "spotifyArtist": result.get("artist", ""),
+                        "spotifyAlbum": result.get("album", ""),
+                        "spotifyImage": result.get("image", ""),
                     })
                 else:
                     print(f"  [{i}/{total_count}] {display_name[:60]:<60} ✓")
             else:
                 if gui:
                     emit(True, {
-                        "type": "no_match",
+                        "type": "fail",
                         "name": display_name 
                     })
                 else:

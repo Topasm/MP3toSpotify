@@ -120,7 +120,7 @@ def search_with_fallback(
     artist: str,
     title: str,
     channel: str = "",
-) -> str | None:
+) -> dict | None:
     """Try multiple search queries until a match is found.
 
     Args:
@@ -130,11 +130,11 @@ def search_with_fallback(
         channel: YouTube channel name (optional).
 
     Returns:
-        Spotify track ID or None if no match found.
+        Dict with keys {id, name, artist, album, url, image} or None.
     """
     for query in build_search_queries(artist, title, channel):
-        track_id = client.search(query)
-        if track_id:
-            return track_id
+        candidates = client.search_candidates(query, limit=1)
+        if candidates:
+            return candidates[0]
         sleep(0.05)
     return None

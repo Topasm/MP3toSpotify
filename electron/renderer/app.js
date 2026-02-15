@@ -303,10 +303,14 @@ function addSongToList(song) {
   const existingIdx = state.songs.findIndex((s) => s.name === song.name);
 
   if (existingIdx !== -1) {
-    // If exists, only update if the new one is BETTER (e.g. failed -> matched)
-    if (state.songs[existingIdx].status === "failed" && song.status === "matched") {
+    // Update if the new status is better (searching/failed → matched) or finalizing (searching → failed)
+    const current = state.songs[existingIdx];
+    const shouldUpdate =
+      ((current.status === "failed" || current.status === "searching") && song.status === "matched") ||
+      (current.status === "searching" && song.status === "failed");
+    
+    if (shouldUpdate) {
       state.songs[existingIdx] = song;
-      // Re-render this specific item in place
       const row = document.querySelector(`.song-item[data-index="${existingIdx}"]`);
       if (row) {
         row.className = `song-item song-${song.status}`;
@@ -341,8 +345,19 @@ function addSongToList(song) {
 }
 
 function getSongItemHtml(song, idx) {
-  const icon = song.status === "matched" ? "✅" : "❌";
-  const iconClass = song.status === "matched" ? "song-icon-matched" : "song-icon-failed";
+  let icon = "\u2753";
+  let iconClass = "song-icon-failed";
+  
+  if (song.status === "matched") {
+    icon = "\u2705";
+    iconClass = "song-icon-matched";
+  } else if (song.status === "searching") {
+    icon = "\u23F3";
+    iconClass = "song-icon-searching";
+  } else if (song.status === "failed") {
+    icon = "\u274C";
+    iconClass = "song-icon-failed";
+  }
   
   const checkboxHtml = song.status === "matched"
     ? `<input type="checkbox" class="song-checkbox" data-index="${idx}" ${song.checked ? "checked" : ""}>`
@@ -350,8 +365,25 @@ function getSongItemHtml(song, idx) {
 
   // Fix Match button for failed items
   const actionsHtml = song.status === "failed"
-    ? `<button class="btn-fix-match" data-index="${idx}">?뵇 Fix</button>`
+    ? `<button class="btn-fix-match" data-index="${idx}">\u{1F527} Fix</button>`
     : "";
+
+  // Hover tooltip for matched songs
+  let tooltipHtml = "";
+  if (song.status === "matched" && (song.spotifyName || song.spotifyArtist)) {
+    const imgHtml = song.spotifyImage
+      ? `<img class="tooltip-album-art" src="${escapeHtml(song.spotifyImage)}" alt="album art">`
+      : "";
+    tooltipHtml = `
+      <div class="song-tooltip">
+        ${imgHtml}
+        <div class="tooltip-info">
+          <div class="tooltip-track">${escapeHtml(song.spotifyName)}</div>
+          <div class="tooltip-artist">${escapeHtml(song.spotifyArtist)}</div>
+          <div class="tooltip-album">${escapeHtml(song.spotifyAlbum)}</div>
+        </div>
+      </div>`;
+  }
 
   return `
     ${checkboxHtml}
@@ -359,6 +391,7 @@ function getSongItemHtml(song, idx) {
     <span class="song-name">${escapeHtml(song.name)}</span>
     ${actionsHtml}
     ${getBadgeHtml(song)}
+    ${tooltipHtml}
   `;
 }
 
@@ -425,6 +458,15 @@ function handlePythonMessage(msg) {
       els.progressLabel.textContent = `Processing ${msg.count} files...`;
       break;
 
+    case "scanned_tag":
+      addSongToList({
+        name: msg.name,
+        status: "searching",
+        trackId: null,
+        checked: false,
+      });
+      break;
+
     case "match":
       state.scanned++;
       state.matched++;
@@ -433,6 +475,10 @@ function handlePythonMessage(msg) {
         status: "matched",
         trackId: msg.trackId,
         checked: true,
+        spotifyName: msg.spotifyName || "",
+        spotifyArtist: msg.spotifyArtist || "",
+        spotifyAlbum: msg.spotifyAlbum || "",
+        spotifyImage: msg.spotifyImage || "",
       });
       updateStats();
       break;
@@ -952,7 +998,7 @@ window.duplicateLogic = {
         this.foundDuplicates = msg.tracks || [];
         this.showPreview(msg.count);
       } else if (msg.type === "success" && msg.count === 0) {
-        this.statusDiv.textContent = "??No duplicates found!";
+        this.statusDiv.textContent = "\u2705 No duplicates found!";
         this.statusDiv.className = "status-badge status-success";
       } else if (msg.type === "error") {
         this.statusDiv.textContent = "Error: " + msg.text;
@@ -993,10 +1039,10 @@ window.duplicateLogic = {
       item.innerHTML = `
         <div>
           <strong>${dup.name}</strong>
-          <span style="color:var(--text-secondary);"> ??${dup.artist}</span>
+          <span style="color:var(--text-secondary);"> \u{1F3A4} ${dup.artist}</span>
         </div>
         <span class="status-badge status-failed" style="font-size:0.7rem; padding:2px 6px;">
-          ?봺 ${dup.total_occurrences}횞 (removing 1 copy)
+          \u{1F501} ${dup.total_occurrences}\uD68C (removing 1 copy)
         </span>
       `;
       this.previewList.appendChild(item);
