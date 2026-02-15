@@ -101,6 +101,22 @@ ipcMain.handle("select-file", async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+// Auto-detect music folder
+ipcMain.handle("detect-music-folder", async () => {
+  const os = require("os");
+  const home = os.homedir();
+  const candidates = [
+    path.join(home, "Music"),
+    path.join(home, "music"),
+    path.join(home, "Documents", "Music"),
+  ];
+  
+  for (const dir of candidates) {
+    if (fs.existsSync(dir)) return dir;
+  }
+  return null;
+});
+
 // Save file dialog (for M3U export)
 ipcMain.handle("save-file", async (_event, options) => {
   const result = await dialog.showSaveDialog(mainWindow, {

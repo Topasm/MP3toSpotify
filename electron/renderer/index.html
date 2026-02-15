@@ -201,6 +201,17 @@
     <!-- ═══ SETTINGS TAB ═══ -->
     <section id="settings-panel" class="panel" style="display:none;">
       <div class="card">
+        <h2>&#127912; Appearance</h2>
+        <div class="setting-row">
+          <span>Theme</span>
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider"></span>
+            <span class="theme-label" id="theme-label">Dark</span>
+          </label>
+        </div>
+      </div>
+      <div class="card">
         <h2>🔑 Spotify Credentials</h2>
         <p class="hint">
           Get these from your
@@ -246,6 +257,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Confirm Modal -->
+  <div id="confirm-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:400px;">
+      <div class="modal-header">
+        <h2>Confirm</h2>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message"></p>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:16px;">
+          <button id="confirm-cancel" class="btn btn-secondary">Cancel</button>
+          <button id="confirm-ok" class="btn btn-danger">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Tooltip -->
+  <div id="global-tooltip" class="song-tooltip global-tooltip" style="display:none;"></div>
 
   <script src="app.js"></script>
 </body>

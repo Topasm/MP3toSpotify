@@ -15,6 +15,9 @@ Available as a modern **Desktop App** (Windows / macOS / Linux) and **CLI**.
 
 **Key Features:**
 - 🖥️ Modern desktop GUI (Electron) with real-time progress
+- 🎨 **Dark/Light Theme Toggle** — customize your look 🆕
+- 🖼️ **Album Art Thumbnails** — verify matches visually 🆕
+- 🔔 **Toast Notifications** — non-intrusive alerts and feedback 🆕
 - 🎵 Recursive local music directory scanning via TinyTag
 - 📂 **Drag & Drop** folder support for easy import
 - ▶️ YouTube playlist import (via yt-dlp — no download required)

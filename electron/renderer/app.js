@@ -89,6 +89,18 @@ const els = {
 
   // External
   linkSpotifyDev: $("#link-spotify-dev"),
+
+  // Theme
+  themeToggle: $("#theme-toggle"),
+  themeLabel: $("#theme-label"),
+  globalTooltip: $("#global-tooltip"),
+
+  // Toast & Confirm
+  toastContainer: $("#toast-container"),
+  confirmModal: $("#confirm-modal"),
+  confirmMessage: $("#confirm-message"),
+  confirmOk: $("#confirm-ok"),
+  confirmCancel: $("#confirm-cancel"),
 };
 
 // ?? Settings ??????????????????????????????????????????????????????????????
@@ -96,15 +108,59 @@ function loadSettings() {
   els.clientId.value = localStorage.getItem("mp3ts_clientId") || "";
   els.clientSecret.value = localStorage.getItem("mp3ts_clientSecret") || "";
   els.username.value = localStorage.getItem("mp3ts_username") || "";
+
+  // Theme
+  const savedTheme = localStorage.getItem("mp3ts_theme") || "dark";
+  applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  els.themeToggle.checked = theme === "light";
+  els.themeLabel.textContent = theme === "light" ? "Light" : "Dark";
 }
 
 function saveSettings() {
   localStorage.setItem("mp3ts_clientId", els.clientId.value.trim());
   localStorage.setItem("mp3ts_clientSecret", els.clientSecret.value.trim());
   localStorage.setItem("mp3ts_username", els.username.value.trim());
-  els.settingsStatus.textContent = "??Saved!";
-  setTimeout(() => (els.settingsStatus.textContent = ""), 2000);
+  showToast("Settings saved!", "success");
 }
+
+// ?? Toast Notifications ??????????????????????????????????????????????????????
+function showToast(message, type = "info", duration = 3500) {
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span class="toast-icon">${{success:"\u2705",error:"\u274C",warning:"\u26A0\uFE0F",info:"\u2139\uFE0F"}[type] || "\u2139\uFE0F"}</span>
+    <span class="toast-msg">${escapeHtml(message)}</span>
+    <div class="toast-progress"><div class="toast-progress-bar"></div></div>
+  `;
+  els.toastContainer.appendChild(toast);
+  // Trigger entrance animation
+  requestAnimationFrame(() => toast.classList.add("show"));
+  // Auto-dismiss
+  const timer = setTimeout(() => dismissToast(toast), duration);
+  toast.addEventListener("click", () => { clearTimeout(timer); dismissToast(toast); });
+}
+
+function dismissToast(toast) {
+  toast.classList.remove("show");
+  toast.classList.add("hide");
+  toast.addEventListener("animationend", () => toast.remove());
+}
+
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    els.confirmMessage.textContent = message;
+    els.confirmModal.style.display = "flex";
+    const cleanup = () => { els.confirmModal.style.display = "none"; };
+    els.confirmOk.onclick = () => { cleanup(); resolve(true); };
+    els.confirmCancel.onclick = () => { cleanup(); resolve(false); };
+  });
+}
+
+
 
 function getCredentials() {
   return {
@@ -117,7 +173,7 @@ function getCredentials() {
 function validateCredentials() {
   const creds = getCredentials();
   if (!creds.clientId || !creds.clientSecret || !creds.username) {
-    alert("Please configure your Spotify credentials first.\nGo to the Settings tab.");
+    showToast("Please configure your Spotify credentials in the Settings tab.", "warning");
     return null;
   }
   return creds;
@@ -316,6 +372,8 @@ function addSongToList(song) {
         row.className = `song-item song-${song.status}`;
         row.innerHTML = getSongItemHtml(song, existingIdx);
       }
+      updateSelectedCount();
+      updateFilterCounts();
     }
     return; // Don't add duplicate
   }
@@ -342,6 +400,7 @@ function addSongToList(song) {
   if (emptyState) emptyState.remove();
 
   updateSelectedCount();
+  updateFilterCounts();
 }
 
 function getSongItemHtml(song, idx) {
@@ -368,30 +427,18 @@ function getSongItemHtml(song, idx) {
     ? `<button class="btn-fix-match" data-index="${idx}">\u{1F527} Fix</button>`
     : "";
 
-  // Hover tooltip for matched songs
-  let tooltipHtml = "";
-  if (song.status === "matched" && (song.spotifyName || song.spotifyArtist)) {
-    const imgHtml = song.spotifyImage
-      ? `<img class="tooltip-album-art" src="${escapeHtml(song.spotifyImage)}" alt="album art">`
-      : "";
-    tooltipHtml = `
-      <div class="song-tooltip">
-        ${imgHtml}
-        <div class="tooltip-info">
-          <div class="tooltip-track">${escapeHtml(song.spotifyName)}</div>
-          <div class="tooltip-artist">${escapeHtml(song.spotifyArtist)}</div>
-          <div class="tooltip-album">${escapeHtml(song.spotifyAlbum)}</div>
-        </div>
-      </div>`;
-  }
+  // Thumbnail logic
+  const thumbHtml = song.status === "matched" && song.spotifyImage
+    ? `<img src="${escapeHtml(song.spotifyImage)}" class="song-thumb" alt="art">`
+    : `<div class="song-thumb-placeholder"></div>`;
 
   return `
     ${checkboxHtml}
+    ${thumbHtml}
     <span class="song-icon ${iconClass}">${icon}</span>
     <span class="song-name">${escapeHtml(song.name)}</span>
     ${actionsHtml}
     ${getBadgeHtml(song)}
-    ${tooltipHtml}
   `;
 }
 
@@ -579,26 +626,33 @@ els.btnStartScan.addEventListener("click", async () => {
   setImporting(true);
   els.importSummary.style.display = "none";
   els.progressLabel.textContent = "Scanning music files...";
-  els.progressBar.style.width = "0%";
-  els.progressPct.textContent = "0%";
-
+  
+  // Reset
+  state.songs = [];
+  state.scanned = 0;
+  state.matched = 0;
+  state.failed = 0;
+  
+  rerenderSongList();
+  
   if (state.cleanup) state.cleanup();
   state.cleanup = window.api.onPythonMessage(handlePythonMessage);
 
   await window.api.startScan({
+    musicDir,
     username: creds.username,
     clientId: creds.clientId,
     clientSecret: creds.clientSecret,
-    musicDir,
   });
 });
+
 
 // YouTube Import
 els.btnStartYoutube.addEventListener("click", async () => {
   const creds = validateCredentials();
   if (!creds) return;
   const url = els.youtubeUrl.value.trim();
-  if (!url) { alert("Please enter a YouTube playlist URL."); return; }
+  if (!url) { showToast("Please enter a YouTube playlist URL.", "warning"); return; }
 
   setImporting(true);
   els.importSummary.style.display = "none";
@@ -622,7 +676,7 @@ els.btnStartRetry.addEventListener("click", async () => {
   const creds = validateCredentials();
   if (!creds) return;
   const inputFile = els.retryInput.value;
-  if (!inputFile) { alert("Please select a failed matches file first."); return; }
+  if (!inputFile) { showToast("Please select a failed matches file first.", "warning"); return; }
 
   setImporting(true);
   els.importSummary.style.display = "none";
@@ -680,7 +734,7 @@ els.filterButtons.forEach((btn) => {
 els.btnGoToPlaylist.addEventListener("click", () => {
   const selected = state.songs.filter((s) => s.status === "matched" && s.checked && s.trackId);
   if (selected.length === 0) {
-    alert("No matched songs selected. Check the songs you want to add.");
+    showToast("No matched songs selected. Check the songs you want to add.", "warning");
     return;
   }
   switchTab("playlist");
@@ -690,7 +744,7 @@ els.btnGoToPlaylist.addEventListener("click", () => {
 els.btnExportM3u.addEventListener("click", async () => {
   const matched = state.songs.filter((s) => s.status === "matched" && s.trackId);
   if (matched.length === 0) {
-    alert("No matched songs to export.");
+    showToast("No matched songs to export.", "warning");
     return;
   }
 
@@ -717,9 +771,9 @@ els.btnExportM3u.addEventListener("click", async () => {
   // Write via a simple IPC call — we'll use the main process
   try {
     await window.api.writeFile({ filePath, content: m3u });
-    alert(`Exported ${matched.length} tracks to M3U.`);
+    showToast(`Exported ${matched.length} tracks to M3U.`, "success");
   } catch (err) {
-    alert(`Export failed: ${err.message}`);
+    showToast(`Export failed: ${err.message}`, "error");
   }
 });
 
@@ -781,7 +835,7 @@ async function addToPlaylist(playlistId, playlistName) {
 
   const selected = state.songs.filter((s) => s.status === "matched" && s.checked && s.trackId);
   if (selected.length === 0) {
-    alert("No matched songs selected. Go to the Songs tab to select songs first.");
+    showToast("No matched songs selected. Go to the Songs tab to select songs first.", "warning");
     return;
   }
 
@@ -1059,7 +1113,8 @@ window.duplicateLogic = {
     const creds = validateCredentials();
     if (!creds) return;
 
-    if (!confirm(`Remove ${this.foundDuplicates.length} duplicate(s)? A backup will be saved to Documents/MP3toSpotify/backups/.`)) {
+    const ok = await showConfirm(`Remove ${this.foundDuplicates.length} duplicate(s)? A backup will be saved to Documents/MP3toSpotify/backups/.`);
+    if (!ok) {
       return;
     }
 
@@ -1105,6 +1160,108 @@ window.duplicateLogic = {
 
 window.duplicateLogic.init();
 
-// ?? Init ??????????????????????????????????????????????????????????????????
+// ?? Filter Counts ??????????????????????????????????????????????????????????
+function updateFilterCounts() {
+  const total = state.songs.length;
+  const matched = state.songs.filter(s => s.status === "matched").length;
+  const failed = state.songs.filter(s => s.status === "failed").length;
+  els.filterButtons.forEach(btn => {
+    const f = btn.dataset.filter;
+    if (f === "all") btn.textContent = `All (${total})`;
+    else if (f === "matched") btn.textContent = `\u2713 Matched (${matched})`;
+    else if (f === "failed") btn.textContent = `\u2717 Failed (${failed})`;
+  });
+}
+
+// ?? Init ??????????????????????????????????????????????????????????????????
 loadSettings();
 
+// Theme toggle event
+els.themeToggle.addEventListener("change", () => {
+  const theme = els.themeToggle.checked ? "light" : "dark";
+  localStorage.setItem("mp3ts_theme", theme);
+  applyTheme(theme);
+});
+
+// Auto-detect music folder on first launch
+(async () => {
+  const hasFolder = els.musicDir.value || localStorage.getItem("mp3ts_lastFolder");
+  if (!hasFolder && window.api.detectMusicFolder) {
+    const detected = await window.api.detectMusicFolder();
+    if (detected) {
+      els.musicDir.value = detected;
+      els.musicDir.placeholder = detected;
+    }
+  }
+})();
+
+// ?? Global Tooltip ??????????????????????????????????????????????????????????
+let currentTooltipIdx = -1;
+
+function hideTooltip() {
+  els.globalTooltip.style.display = "none";
+  currentTooltipIdx = -1;
+}
+
+els.songList.addEventListener("mousemove", (e) => {
+  const row = e.target.closest(".song-item");
+  if (!row) {
+    hideTooltip();
+    return;
+  }
+
+  const idx = parseInt(row.dataset.index, 10);
+  const song = state.songs[idx];
+
+  // Only show for matched songs with metadata
+  if (!song || song.status !== "matched" || (!song.spotifyName && !song.spotifyArtist)) {
+    hideTooltip();
+    return;
+  }
+
+  // Populate content only if song changed
+  if (currentTooltipIdx !== idx) {
+    currentTooltipIdx = idx;
+    const imgHtml = song.spotifyImage
+      ? `<div class="tooltip-art" style="background-image: url('${escapeHtml(song.spotifyImage)}')"></div>`
+      : "";
+    
+    // Use the existing CSS classes for inner content
+    els.globalTooltip.innerHTML = `
+      ${imgHtml}
+      <div class="tooltip-info">
+        <div class="tooltip-track">${escapeHtml(song.spotifyName || "Unknown Track")}</div>
+        <div class="tooltip-artist">${escapeHtml(song.spotifyArtist || "Unknown Artist")}</div>
+        <div class="tooltip-album">${escapeHtml(song.spotifyAlbum || "Unknown Album")}</div>
+      </div>
+    `;
+    els.globalTooltip.style.display = "flex";
+  }
+
+  // Allow browser to render size before measuring
+  requestAnimationFrame(() => {
+    const tooltipWidth = els.globalTooltip.offsetWidth || 300;
+    const tooltipHeight = els.globalTooltip.offsetHeight || 100;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = e.clientX + 15;
+    let top = e.clientY - tooltipHeight - 10;
+
+    // Flip to left if too close to right edge
+    if (left + tooltipWidth > viewportWidth - 20) {
+      left = e.clientX - tooltipWidth - 15;
+    }
+    
+    // Flip to bottom if too close to top edge
+    if (top < 10) {
+      top = e.clientY + 20;
+    }
+
+    els.globalTooltip.style.left = `${left}px`;
+    els.globalTooltip.style.top = `${top}px`;
+  });
+});
+
+els.songList.addEventListener("mouseleave", hideTooltip);
+els.songList.addEventListener("scroll", hideTooltip);

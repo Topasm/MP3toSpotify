@@ -6,6 +6,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("api", {
   // Dialog pickers
   selectFolder: () => ipcRenderer.invoke("select-folder"),
+  detectMusicFolder: () => ipcRenderer.invoke("detect-music-folder"),
   selectFile: () => ipcRenderer.invoke("select-file"),
   saveFile: (options) => ipcRenderer.invoke("save-file", options),
   writeFile: (options) => ipcRenderer.invoke("write-file", options),
