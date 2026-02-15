@@ -61,6 +61,7 @@ jobs:
             --hidden-import main \
             --hidden-import retry_failed \
             --hidden-import youtube_import \
+            --hidden-import remove_duplicates \
             --hidden-import spotify_client \
             --hidden-import encoding_utils \
             --hidden-import gui_utils \
